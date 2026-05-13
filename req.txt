@@ -1,1 +1,2 @@
-anchor apple generic and certificate leaf[subject.OU] = "VGUZ6D2NST"
+PySide6
+pyinstaller
