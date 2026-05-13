@@ -1,4 +1,4 @@
-name: Build Universal Mac App
+name: Build and Upload to App Store
 on: [push, workflow_dispatch]
 
 jobs:
@@ -7,7 +7,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: false # This ignores that ghost folder!
+          submodules: false
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -16,20 +16,37 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install PySide6 pyinstaller
+          # Added psutil here since we found it was missing earlier!
+          pip install PySide6 pyinstaller psutil
           if [ -f req.txt ]; then pip install -r req.txt; fi
 
       - name: Build Universal App
         run: |
           pyinstaller --noconfirm --windowed \
           --name "DigitalWellbeing" \
+          --icon "assets/icons/icon.icns" \
           --target-architecture universal2 \
           --add-data "assets:assets" \
           --add-data "core:core" \
           --add-data "ui:ui" \
           main.py
 
-      - name: Upload Artifact
+      # --- NEW STEP: UPLOAD TO APPLE ---
+      - name: Upload to App Store Connect
+        env:
+          APPLE_ID: "kirkmendsa@gmail.com"
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+        run: |
+          # We zip the app because Apple's uploader requires a single package file
+          ditto -c -k --sequesterRsrc --keepParent "dist/DigitalWellbeing.app" "dist/DigitalWellbeing.zip"
+          
+          xcrun altool --upload-app \
+            --type osx \
+            --file "dist/DigitalWellbeing.zip" \
+            --username "$APPLE_ID" \
+            --password "$APPLE_PASSWORD"
+
+      - name: Upload Artifact (For your own download)
         uses: actions/upload-artifact@v4
         with:
           name: Universal-App-Package
