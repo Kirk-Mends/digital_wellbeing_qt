@@ -1,21 +1,34 @@
 name: Build Universal Mac App
-on: [push]
+on: [push, workflow_dispatch]
+
 jobs:
   build:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: false # This ignores that ghost folder!
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+
       - name: Install dependencies
         run: |
           pip install PySide6 pyinstaller
           if [ -f req.txt ]; then pip install -r req.txt; fi
+
       - name: Build Universal App
         run: |
-          pyinstaller --noconfirm --windowed --name "DigitalWellbeing"           --target-arch universal2           --add-data "assets:assets"           main.py
+          pyinstaller --noconfirm --windowed \
+          --name "DigitalWellbeing" \
+          --target-architecture universal2 \
+          --add-data "assets:assets" \
+          --add-data "core:core" \
+          --add-data "ui:ui" \
+          main.py
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
