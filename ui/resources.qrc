@@ -1,0 +1,12 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource>
+    <file>../assets/icons/hamburger.svg</file>
+    <file>../assets/icons/dashboard.svg</file>
+    <file>../assets/icons/smart_mode.svg</file>
+    <file>../assets/icons/ai_mode.svg</file>
+    <file>../assets/icons/analytics.svg</file>
+    <file>../assets/icons/weekly_report.svg</file>
+    <file>../assets/icons/monthly_report.svg</file>
+    <file>../assets/icons/settings.svg</file>
+</qresource>
+</RCC>
