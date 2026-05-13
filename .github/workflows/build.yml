@@ -1,0 +1,23 @@
+name: Build Universal Mac App
+on: [push]
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          pip install PySide6 pyinstaller
+          if [ -f req.txt ]; then pip install -r req.txt; fi
+      - name: Build Universal App
+        run: |
+          pyinstaller --noconfirm --windowed --name "DigitalWellbeing"           --target-arch universal2           --add-data "assets:assets"           main.py
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Universal-App-Package
+          path: dist/*.app
