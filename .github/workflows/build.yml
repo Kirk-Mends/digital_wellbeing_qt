@@ -22,7 +22,7 @@ jobs:
 
       - name: Build App
         run: |
-          # Build the .app bundle
+          # 1. Build the .app bundle
           pyinstaller --noconfirm --windowed \
           --name "DigitalWellbeing" \
           --osx-bundle-identifier "com.kirkmends.digitalwellbeing" \
@@ -32,10 +32,14 @@ jobs:
           --add-data "ui:ui" \
           main.py
           
-          # Fix versioning: 'Set' overrides existing entries to prevent crashes.
-          # CFBundleVersion uses the unique GitHub run number so Apple always accepts it.
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ github.run_number }}" "dist/DigitalWellbeing.app/Contents/Info.plist"
-          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.0" "dist/DigitalWellbeing.app/Contents/Info.plist"
+          # 2. Hybrid Versioning Fix:
+          # First, try to delete existing entries (ignores error if they don't exist)
+          /usr/libexec/PlistBuddy -c "Delete :CFBundleVersion" "dist/DigitalWellbeing.app/Contents/Info.plist" || true
+          /usr/libexec/PlistBuddy -c "Delete :CFBundleShortVersionString" "dist/DigitalWellbeing.app/Contents/Info.plist" || true
+          
+          # Then, add them fresh with the unique GitHub run number
+          /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${{ github.run_number }}" "dist/DigitalWellbeing.app/Contents/Info.plist"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0.0" "dist/DigitalWellbeing.app/Contents/Info.plist"
 
       - name: Upload to App Store Connect
         env:
