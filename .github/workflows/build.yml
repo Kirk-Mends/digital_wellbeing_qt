@@ -145,7 +145,6 @@
 
 
 
-
 name: Build and Upload to App Store
 on: [push, workflow_dispatch]
 
@@ -204,16 +203,17 @@ jobs:
       - name: Manual Code Sign (The Fix for 90334 Errors)
         run: |
           APP_PATH="dist/K-Mends Wellbeing.app"
-          IDENTITY="Apple Distribution: Kirk Mends (VGUZ6D2NST)" # Double check this matches your cert name
           
-          # 1. Sign internal components first (Libraries and Frameworks)
-          # We avoid --deep to prevent identifier mismatches
+          # This name now matches your Keychain screenshot exactly
+          IDENTITY="Apple Distribution: KIRK MENDS ATTAFUAH (VGUZ6D2NST)" 
+          
+          # 1. Sign internal components first
           find "$APP_PATH/Contents/Frameworks" -type f \( -name "*.dylib" -or -name "*.framework" -or -name "*.so" \) | xargs codesign --force --verify --verbose --options runtime --sign "$IDENTITY"
 
-          # 2. Sign the main executable with your Entitlements
+          # 2. Sign the main executable
           codesign --force --verify --verbose --options runtime --entitlements entitlements.plist --sign "$IDENTITY" "$APP_PATH/Contents/MacOS/K-Mends Wellbeing"
 
-          # 3. Finalize the app bundle signature
+          # 3. Finalize bundle
           codesign --force --verify --verbose --options runtime --entitlements entitlements.plist --sign "$IDENTITY" "$APP_PATH"
 
       - name: Upload to App Store Connect
@@ -221,7 +221,6 @@ jobs:
           APPLE_ID: "kirkmendsa@gmail.com"
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
         run: |
-          # Use productbuild to create a signed installer package for the App Store
           productbuild --complex-the-package-path "dist/K-Mends Wellbeing.app" --identifier "com.kirkmends.wellbeing" --version "1.3.1" "dist/K-MendsWellbeing.pkg"
           
           xcrun altool --upload-package "dist/K-MendsWellbeing.pkg" \
