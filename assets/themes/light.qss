@@ -1,0 +1,366 @@
+/* ============================================
+   LIGHT THEME — PREMIUM FLUENT STYLE
+   ============================================ */
+QWidget {
+    background-color: #F5F7FA;
+    color: #1A1A1A;
+    /* Mac Native -> Helvetica -> Windows Native -> Generic */
+    font-family: ".AppleSystemUIFont", "Helvetica Neue", "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+
+
+/* ============================================
+   FLUENT CARD (Light Acrylic)
+   ============================================ */
+#FluentCard,
+QFrame#FluentCard {
+    background: rgba(255, 255, 255, 0.70);   /* soft acrylic white */
+    border-radius: 14px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    padding: 14px;
+    min-height: 320px;
+}
+
+/* Remove inner backgrounds to avoid artifacts */
+#FluentCard * {
+    background: transparent;
+    background-color: transparent;
+    border: none;
+}
+
+/* Sparkline protection */
+#FluentCard pgPlotWidget {
+    min-height: 60px;
+}
+
+
+
+/* ============================================
+   CHART BACKGROUND (Light Mode)
+   ============================================ */
+pgPlotWidget {
+    background-color: rgba(255, 255, 255, 0.55);
+    border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+
+
+/* ============================================
+   TYPOGRAPHY
+   ============================================ */
+#CardTitle {
+    font-size: 14px;
+    font-weight: 600;
+    color: #2A2A2A;
+}
+
+#CardValue {
+    font-size: 16px;
+    font-weight: 600;
+    color: #0057D9;   /* Fluent blue accent */
+}
+
+
+
+/* ============================================
+   BUTTON
+   ============================================ */
+#PrimaryButton {
+    background-color: #0078D7;
+    color: white;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 14px;
+}
+
+
+
+/* ============================================
+   SIDEBAR (Light Acrylic)
+   ============================================ */
+#Sidebar {
+    background: rgba(255, 255, 255, 0.65);
+    /* backdrop-filter: blur(18px); */
+    border-right: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+#SidebarButton {
+    padding: 10px 14px;
+    border-radius: 6px;
+    color: #1A1A1A;
+    font-size: 14px;
+    text-align: left;
+}
+
+#SidebarButton > * {
+    qproperty-alignment: AlignLeft;
+}
+
+#SidebarButton:hover {
+    background-color: rgba(0, 120, 215, 0.10);
+}
+
+#SidebarButton[active="true"] {
+    background-color: rgba(0, 120, 215, 0.15);
+    font-weight: 600;
+    color: #0057D9;
+    border-left: 3px solid #0057D9;
+}
+
+/* ============================================
+   FIX FOR HAMBURGER MENU (macOS Black Box)
+   ============================================ */
+#MenuToggleButton {
+    background-color: transparent;
+    border: none;
+    outline: none;           /* Removes macOS focus ring */
+    padding: 8px;
+    margin: 4px;
+}
+
+#MenuToggleButton:hover {
+    background-color: rgba(0, 120, 215, 0.10); /* Light Fluent Blue hover */
+    border-radius: 6px;
+}
+
+#MenuToggleButton:pressed {
+    background-color: rgba(0, 120, 215, 0.20);
+}
+
+/* ============================================
+   ANALYTICS — PAGE TITLE
+   ============================================ */
+#PageTitle {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1A1A1A;
+    padding-bottom: 6px;
+}
+
+
+/* ============================================
+   ANALYTICS — PREMIUM TAB LABELS (Light Mode)
+   ============================================ */
+
+QTabWidget#AnalyticsTabs::pane {
+    border: none;
+    background: transparent;
+}
+
+QTabWidget#AnalyticsTabs QTabBar {
+    qproperty-drawBase: 0;
+    background: transparent;
+}
+
+QTabWidget#AnalyticsTabs QTabBar::tab {
+    font-size: 13px;
+    font-weight: 550;
+    padding: 6px 18px;
+    margin-right: 6px;
+    border-radius: 6px;
+    background: transparent;
+    color: #444444;
+}
+
+QTabWidget#AnalyticsTabs QTabBar::tab:hover {
+    background: rgba(0, 0, 0, 8);
+}
+
+QTabWidget#AnalyticsTabs QTabBar::tab:selected {
+    font-size: 14px;
+    font-weight: 650;
+    color: #0057D9;
+    background: rgba(0, 120, 215, 18);
+    border-bottom: 2px solid #0057D9;
+}
+
+
+
+/* ============================================
+   ANALYTICS — CARD TITLES
+   ============================================ */
+#AnalyticsCardTitle {
+    font-size: 14px;
+    font-weight: 600;
+    color: #2A2A2A;
+    padding-bottom: 4px;
+}
+
+
+
+
+
+
+QScrollBar:vertical {
+    background: transparent;
+    width: 6px;
+    margin: 0px;
+}
+
+QScrollBar::handle:vertical {
+    background: rgba(15, 108, 189, 120); /* #0F6CBD with transparency */
+    border-radius: 3px;
+    min-height: 40px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: rgba(15, 108, 189, 180);
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    height: 0;
+    width: 0;
+}
+
+QScrollBar::add-page:vertical,
+QScrollBar::sub-page:vertical {
+    background: none;
+}
+
+
+
+#InsightText {
+    /* Using the universal stack for smooth rendering on all OSs */
+    font-family: ".AppleSystemUIFont", "Segoe UI", sans-serif;
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+
+#ReportCard {
+    background-color: #FFFFFF; /* Match your sidebar */
+    border: 1px solid #E2E8F0; /* Very subtle grey border for depth */
+    border-radius: 12px;
+    margin-top: 10px;
+}
+
+
+
+
+/* ============================================================
+   SETTINGS SPECIFIC OVERRIDES (LIGHT MODE)
+   ============================================================ */
+
+/* 1. Subtitles (Section Labels) - Deep Slate for contrast */
+AppearancePage QLabel#SectionLabel,
+NotificationsPage QLabel#SectionLabel, 
+DataStoragePage QLabel#SectionLabel {
+    color: #475569 !important; 
+    font-weight: 800;
+    font-size: 10px;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+}
+
+/* 2. Export and Import writing - Standard Dark Text */
+DataStoragePage QFrame QPushButton {
+    color: #1A1A1A !important; 
+    font-weight: 600;
+}
+
+/* 3. About & Privacy Green Card writing - Dark Text for readability on light green */
+AboutPage QFrame QLabel {
+    color: #166534 !important; /* Deep Forest Green */
+}
+
+/* This targets the buttons in the About/Privacy page */
+AboutPage QPushButton {
+    background-color: #FFFFFF;
+    border: 1px solid #E2E8F0;    /* Uniform, thin, modern border */
+    border-radius: 8px;           /* Matching your card radius */
+    padding: 10px 16px;
+    color: #1A1A1A;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+AboutPage QPushButton:hover {
+    background-color: #F8FAFC;    /* Subtle light grey hover */
+    border: 1px solid #CBD5E1;    /* Slightly darker border on hover */
+}
+
+AboutPage QPushButton:pressed {
+    background-color: #F1F5F9;
+}
+
+/* Specifically for the Data Folder Path label/box to make it look clean */
+AboutPage QLabel#PathLabel {
+    background-color: #F8FAFC;
+    border-radius: 6px;
+    padding: 12px;
+    color: #475569;
+    font-family: "SF Mono", "Menlo", monospace; /* Makes paths easier to read */
+    font-size: 11px;
+    border: 1px dashed #E2E8F0;
+}
+
+
+
+/* --- LIGHT MODE DANGER ZONE --- */
+
+/* The Header */
+DataStoragePage QLabel#SectionLabel[text="DANGER ZONE"] {
+    color: #DC2626 !important; /* Strong System Red */
+}
+
+/* The Buttons */
+QPushButton.danger-button {
+    color: #DC2626 !important;
+    font-weight: 700 !important;
+}
+
+/* The Hover Effect */
+QPushButton.danger-button:hover {
+    background-color: rgba(220, 38, 38, 0.05) !important;
+    color: #B91C1C !important; /* Darker blood-red on hover */
+    border-radius: 8px;
+}
+
+
+/* ============================================
+   PREMIUM QCOMBOBOX (Dropdown) STYLE
+   ============================================ */
+QComboBox {
+    background-color: #FFFFFF;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 6px;
+    padding: 5px 12px;
+    color: #1A1A1A;
+    font-size: 13px;       /* Makes the font look more professional */
+    font-weight: 500;
+    min-height: 28px;      /* Fixes the "bulky" look */
+}
+
+QComboBox:hover {
+    background-color: #F9FAFB;
+    border: 1px solid #0078D4; /* Fluent Blue highlight */
+}
+
+/* This styles the actual list that pops out */
+QComboBox QAbstractItemView {
+    background-color: #FFFFFF;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    selection-background-color: #0078D4;
+    selection-color: #FFFFFF;
+    outline: none;
+    padding: 4px;
+}
+
+/* Removes the default clunky arrow box */
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 25px;
+    border-left: none;
+}
+
+/* Optional: If you have a chevron icon, use it here. 
+   Otherwise, this just cleans up the spacing. */
+QComboBox::down-arrow {
+    width: 10px;
+    height: 10px;
+}

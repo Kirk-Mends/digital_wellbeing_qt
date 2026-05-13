@@ -1,0 +1,138 @@
+/* GLOBAL FLUENT BASE */
+QWidget {
+    background-color: transparent;
+    color: #1A1A1A;
+    font-family: ".AppleSystemUIFont", "Helvetica Neue", "Segoe UI", sans-serif;
+}
+
+
+/* FLUENT CARDS */
+#FluentCard {
+    background-color: rgba(255, 255, 255, 0.55);
+    border-radius: 14px;
+    border: 1px solid rgba(154, 95, 95, 0.05);
+    padding: 14px;
+    min-height: 320px; /* prevents collapse */
+}
+
+
+
+/* Prevent QSS from collapsing inner widgets */
+#FluentCard QWidget,
+#FluentCard QFrame {
+    padding: 0;
+    margin: 0;
+}
+
+/* Protect sparkline height */
+#FluentCard pgPlotWidget {
+    min-height: 60px;
+}
+
+/* CARD TYPOGRAPHY */
+#CardTitle {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1A1A1A;
+}
+
+#CardValue {
+    font-size: 16px; /* reduced from 20px */
+    font-weight: 600;
+    color: #0057D9;
+}
+
+/* BUTTONS */
+#PrimaryButton {
+    background-color: #0078D7;
+    color: white;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 14px;
+    border: none;
+}
+
+#PrimaryButton:hover {
+    background-color: #0A84E8;
+}
+
+/* SIDEBAR */
+#Sidebar {
+    background: qlineargradient(
+        x1:0, y1:0, x2:0, y2:1,
+        stop:0 rgba(255,255,255,0.65),
+        stop:1 rgba(240,240,240,0.55)
+    );
+    /* backdrop-filter: blur(18px); */
+    border-right: 1px solid #D0D7E3;
+}
+
+/* Sidebar alignment fix */
+#SidebarButton {
+    padding: 10px 14px;
+    border-radius: 6px;
+    color: #1A1A1A;
+    font-size: 14px;
+    text-align: left; /* force left alignment */
+}
+
+/* Force icon + text alignment like Task Manager */
+#SidebarButton > * {
+    qproperty-alignment: AlignLeft;
+}
+
+#SidebarButton:hover {
+    background-color: rgba(0, 120, 215, 0.10);
+}
+
+#SidebarButton[active="true"] {
+    background-color: rgba(0, 120, 215, 0.15);
+    font-weight: 600;
+    color: #0057D9;
+    border-left: 3px solid #0057D9;
+}
+
+/*
+QFrame#FluentCard {
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+*/
+
+
+
+
+/* Sidebar container */
+#SettingsSidebar {
+    background: #f3f3f3;
+    border-right: 1px solid #d0d0d0;
+    padding: 10px 0;
+    outline: none;
+}
+
+/* Sidebar items */
+#SettingsSidebar::item {
+    padding: 10px 16px;
+    margin: 2px 6px;
+    border-radius: 6px;
+    color: #333;
+    font-size: 14px;
+}
+
+/* Hover */
+#SettingsSidebar::item:hover {
+    background: #e5e5e5;
+}
+
+/* Selected */
+#SettingsSidebar::item:selected {
+    background: #0078d4;
+    color: white;
+}
+
+
+
+
+
+

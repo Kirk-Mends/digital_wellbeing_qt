@@ -1,0 +1,372 @@
+/* ============================================
+   BLUE THEME — PREMIUM FLUENT STYLE
+   ============================================ */
+QWidget {
+    background-color: #F2F6FC;
+    color: #1A1A1A;
+    /* Mac Native first (".AppleSystemUIFont"), then Windows (Segoe UI) */
+    font-family: ".AppleSystemUIFont", "Helvetica Neue", "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+
+
+/* ============================================
+   FLUENT BLUE CARD (Acrylic White)
+   ============================================ */
+#FluentCard,
+QFrame#FluentCard {
+    background: rgba(255, 255, 255, 0.75);
+    border-radius: 14px;
+    border: 1px solid rgba(0, 87, 217, 0.15);   /* soft Fluent blue border */
+    padding: 14px;
+    min-height: 320px;
+}
+
+/* Remove inner backgrounds */
+#FluentCard * {
+    background: transparent;
+    background-color: transparent;
+    border: none;
+}
+
+/* Sparkline protection */
+#FluentCard pgPlotWidget {
+    min-height: 60px;
+}
+
+
+
+/* ============================================
+   CHART BACKGROUND (Blue Mode)
+   ============================================ */
+pgPlotWidget {
+    background-color: rgba(255, 255, 255, 0.55);
+    border-radius: 10px;
+    border: 1px solid rgba(0, 87, 217, 0.10);
+}
+
+
+
+/* ============================================
+   TYPOGRAPHY
+   ============================================ */
+#CardTitle {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1A1A1A;
+}
+
+#CardValue {
+    font-size: 16px;
+    font-weight: 600;
+    color: #0057D9;   /* Fluent Blue */
+}
+
+
+
+/* ============================================
+   BUTTON
+   ============================================ */
+#PrimaryButton {
+    background-color: #0057D9;
+    color: white;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 14px;
+}
+
+
+
+/* ============================================
+   SIDEBAR (Fluent Blue Acrylic)
+   ============================================ */
+#Sidebar {
+    background: rgba(230, 240, 255, 0.65);
+    /* backdrop-filter: blur(18px); */
+    border-right: 1px solid rgba(0, 87, 217, 0.12);
+}
+
+#SidebarButton {
+    padding: 10px 14px;
+    border-radius: 6px;
+    color: #1A1A1A;
+    font-size: 14px;
+    text-align: left;
+}
+
+#SidebarButton > * {
+    qproperty-alignment: AlignLeft;
+}
+
+#SidebarButton:hover {
+    background-color: rgba(0, 87, 217, 0.10);
+}
+
+#SidebarButton[active="true"] {
+    background-color: rgba(0, 87, 217, 0.18);
+    font-weight: 600;
+    color: #0057D9;
+    border-left: 3px solid #0057D9;
+}
+
+/* ============================================
+   FIX FOR HAMBURGER MENU (macOS Black Box)
+   =========================================== */
+#MenuToggleButton {
+    background-color: transparent;
+    border: none;
+    outline: none;           /* Removes the macOS focus rectangle */
+    padding: 8px;
+    margin: 4px;
+}
+
+#MenuToggleButton:hover {
+    /* Uses the same Fluent Blue tint as your other buttons */
+    background-color: rgba(0, 87, 217, 0.12); 
+    border-radius: 6px;
+}
+
+#MenuToggleButton:pressed {
+    background-color: rgba(0, 87, 217, 0.20);
+}
+
+/* ============================================
+   ANALYTICS — PAGE TITLE
+   ============================================ */
+#PageTitle {
+    font-size: 18px;
+    font-weight: 700;
+    color: #003A8C;   /* deep Fluent blue */
+    padding-bottom: 6px;
+}
+
+
+/* ============================================
+   ANALYTICS — PREMIUM TAB LABELS (Blue Mode)
+   ============================================ */
+
+QTabWidget#AnalyticsTabs::pane {
+    border: none;
+    background: transparent;
+}
+
+QTabWidget#AnalyticsTabs QTabBar {
+    qproperty-drawBase: 0;
+    background: transparent;
+}
+
+QTabWidget#AnalyticsTabs QTabBar::tab {
+    font-size: 13px;
+    font-weight: 550;
+    padding: 6px 18px;
+    margin-right: 6px;
+    border-radius: 6px;
+    background: transparent;
+    color: #3A5F9F;
+}
+
+QTabWidget#AnalyticsTabs QTabBar::tab:hover {
+    background: rgba(0, 120, 215, 25);
+}
+
+QTabWidget#AnalyticsTabs QTabBar::tab:selected {
+    font-size: 14px;
+    font-weight: 650;
+    color: #0057D9;
+    background: rgba(0, 120, 215, 40);
+    border-bottom: 2px solid #0057D9;
+}
+
+
+
+/* ============================================
+   ANALYTICS — CARD TITLES
+   ============================================ */
+#AnalyticsCardTitle {
+    font-size: 14px;
+    font-weight: 600;
+    color: #003A8C;   /* deep Fluent blue */
+    padding-bottom: 4px;
+}
+
+
+
+
+QScrollBar:vertical {
+    background: transparent;
+    width: 6px;
+    margin: 0px;
+}
+
+QScrollBar::handle:vertical {
+    background: rgba(0, 120, 215, 140); /* Fluent blue */
+    border-radius: 3px;
+    min-height: 40px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: rgba(0, 120, 215, 200);
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    height: 0;
+    width: 0;
+}
+
+QScrollBar::add-page:vertical,
+QScrollBar::sub-page:vertical {
+    background: none;
+}
+
+
+
+#InsightText {
+    /* Changed from 'Segoe UI' to a stack */
+    font-family: ".AppleSystemUIFont", "Segoe UI", sans-serif;
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+
+
+/* ============================================================
+   SETTINGS SPECIFIC OVERRIDES (BLUE MODE)
+   ============================================================ */
+
+/* 1. Subtitles (Section Labels) - Deep Navy Blue */
+AppearancePage QLabel#SectionLabel,
+NotificationsPage QLabel#SectionLabel, 
+DataStoragePage QLabel#SectionLabel {
+    color: #1E40AF !important; 
+    font-weight: 800;
+    font-size: 10px;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+}
+
+/* 2. Export and Import writing - Professional Navy Blue */
+DataStoragePage QFrame QPushButton {
+    color: #003A8C !important;
+    font-weight: 600;
+}
+
+/* 3. About & Privacy Green Card writing - Deep Blue-Green */
+AboutPage QFrame QLabel {
+    color: #065F46 !important;
+}
+
+
+
+
+
+
+
+
+
+
+/* Premium Danger Section - Blue Theme */
+DataStoragePage QLabel#SectionLabel[text="DANGER ZONE"] {
+    color: #F43F5E !important;
+}
+
+/* This targets the property we just added in Python */
+QPushButton.danger-button {
+    color: #F43F5E !important;
+    font-weight: 700 !important;
+}
+
+QPushButton.danger-button:hover {
+    background-color: rgba(244, 63, 94, 0.1) !important;
+    color: #FF1E56 !important;
+}
+
+
+/* ============================================
+   PREMIUM QCOMBOBOX (Dropdown) — BLUE THEME
+   ============================================ */
+QComboBox {
+    background-color: #FFFFFF;
+    /* Uses your Fluent Blue border color with slightly more opacity */
+    border: 1px solid rgba(0, 87, 217, 0.2);
+    border-radius: 8px;
+    padding: 6px 12px;
+    color: #1A1A1A;
+    font-size: 13px;
+    font-weight: 500;
+    min-height: 28px;
+}
+
+QComboBox:hover {
+    background-color: #F0F7FF; /* Very light blue tint on hover */
+    border: 1px solid #0057D9;  /* Strong Fluent Blue */
+}
+
+/* The List View */
+QComboBox QAbstractItemView {
+    background-color: #FFFFFF;
+    border: 1px solid rgba(0, 87, 217, 0.15);
+    border-radius: 8px;
+    selection-background-color: #0057D9;
+    selection-color: #FFFFFF;
+    outline: none;
+}
+
+/* Arrow Styling */
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 25px;
+    border-left: none;
+}
+
+QComboBox::down-arrow {
+    /* If you have a blue chevron icon, you can link it here */
+    width: 10px;
+    height: 10px;
+}
+
+
+/* ============================================
+   ABOUT PAGE — PREMIUM BLUE BUTTONS
+   ============================================ */
+AboutPage QPushButton {
+    background-color: rgba(255, 255, 255, 0.6); /* Semi-transparent white */
+    border: 1px solid rgba(0, 87, 217, 0.15);    /* Soft Fluent Blue border */
+    border-radius: 8px;
+    padding: 10px 18px;
+    color: #003A8C;                             /* Deep Navy for readability */
+    font-size: 13px;
+    font-weight: 600;
+}
+
+AboutPage QPushButton:hover {
+    background-color: rgba(0, 87, 217, 0.08);   /* Light blue glow on hover */
+    border: 1px solid rgba(0, 87, 217, 0.3);
+    color: #0057D9;                             /* Brighter blue text on hover */
+}
+
+AboutPage QPushButton:pressed {
+    background-color: rgba(0, 87, 217, 0.15);
+}
+
+/* The Data Folder Path Box */
+AboutPage QLabel#PathLabel {
+    background-color: rgba(255, 255, 255, 0.4);
+    border: 1px dashed rgba(0, 87, 217, 0.2);
+    border-radius: 6px;
+    padding: 12px;
+    color: #1E40AF;
+    font-family: "SF Mono", "Menlo", monospace;
+    font-size: 11px;
+}
+
+/* Section Header (DATA FOLDER) */
+AboutPage QLabel#SectionHeader {
+    color: #1E40AF;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}

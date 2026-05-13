@@ -1,0 +1,394 @@
+/* ============================================================
+   DARK THEME BASE
+   ============================================================ */
+QWidget {
+    background-color: #161618;
+    color: #E4E7F2;
+    /* Mac Native -> Helvetica -> Windows Native -> Generic */
+    font-family: ".AppleSystemUIFont", "Helvetica Neue", "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+
+/* ============================================================
+   MAIN APP SIDEBAR
+   ============================================================ */
+#Sidebar {
+    background: qlineargradient(
+        x1:0, y1:0, x2:0, y2:1,
+        stop:0 rgba(40,40,45,0.88),
+        stop:0.5 rgba(34,34,38,0.88),
+        stop:1 rgba(28,28,32,0.88)
+    );
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Compact, premium dark-mode buttons */
+#SidebarButton {
+    padding: 8px 12px;               /* tighter */
+    border-radius: 6px;
+    color: #E4E7F2;
+    font-size: 13px;                 /* smaller */
+    qproperty-iconSize: 18px 18px;   /* smaller icons */
+    text-align: left;
+}
+
+#SidebarButton:hover {
+    background-color: rgba(255, 255, 255, 0.04);
+}
+
+#SidebarButton[active="true"] {
+    background-color: rgba(77, 163, 255, 0.14);
+    font-weight: 600;
+    color: #4DA3FF;
+    border-left: 3px solid #4DA3FF;
+}
+
+/* Remove the extra spacing widget in dark mode */
+#SidebarSpacer {
+    height: 0px;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    border: none;
+}
+
+/* Fix for the Three-Dots / Hamburger Menu Button */
+#MenuToggleButton {
+    background-color: transparent;
+    border: none;
+    outline: none; /* Crucial for macOS to prevent the black focus box */
+    padding: 5px;
+}
+
+#MenuToggleButton:hover {
+    background-color: rgba(255, 255, 255, 0.08); /* Subtle highlight */
+    border-radius: 4px;
+}
+
+/* ============================================================
+   SETTINGS SIDEBAR (QListWidget)
+   ============================================================ */
+
+/* Remove Qt's focus rectangle on the widget itself */
+#SettingsSidebar:focus {
+    outline: none;
+    border: none;
+}
+
+/* Remove focus rectangle on the viewport */
+#SettingsSidebar::viewport {
+    outline: none;
+    border: none;
+}
+
+/* Remove focus rectangle on items */
+#SettingsSidebar::item:focus {
+    outline: none;
+    border: none;
+}
+
+/* Remove active-focus white rectangle */
+#SettingsSidebar::item:selected:active {
+    outline: none;
+    border: none;
+}
+
+
+
+
+
+
+/* Normal item styling */
+#SettingsSidebar::item {
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 6px;
+    padding: 2px 4px;
+    margin: 1px 3px;
+    color: #E4E7F2;
+}
+
+/* Hover */
+#SettingsSidebar::item:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.10);
+}
+
+/* Selected */
+#SettingsSidebar::item:selected {
+    border: 1px solid rgba(77, 163, 255, 0.35);
+    background-color: rgba(77, 163, 255, 0.18);
+    color: #4DA3FF;
+}
+
+
+/* Fix for the Three-Dots / Hamburger Menu Button */
+#MenuToggleButton {
+    background-color: transparent;
+    border: none;
+    outline: none; /* Crucial for macOS to prevent the black focus box */
+    padding: 5px;
+}
+
+#MenuToggleButton:hover {
+    background-color: rgba(255, 255, 255, 0.08); /* Subtle highlight */
+    border-radius: 4px;
+}
+
+/* ============================================================
+   FLUENT DARK CARD
+   ============================================================ */
+#FluentCard,
+QFrame#FluentCard {
+    background-color: rgba(30, 30, 30, 0.55);
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 14px;
+    min-height: 320px;
+}
+
+/* Remove inner artifacts */
+#FluentCard * {
+    background: transparent;
+    background-color: transparent;
+    border: none;
+}
+
+/* Sparkline protection */
+#FluentCard pgPlotWidget {
+    background: transparent;
+    background-color: transparent;
+    min-height: 60px;
+}
+
+
+/* ============================================================
+   TYPOGRAPHY
+   ============================================================ */
+#CardTitle {
+    font-size: 14px;
+    font-weight: 600;
+    color: #E0E0E0;
+}
+
+#CardValue {
+    font-size: 16px;
+    font-weight: 600;
+    color: #4DA3FF;
+}
+
+#PageTitle {
+    font-size: 18px;
+    font-weight: 700;
+    color: #FFFFFF;
+    padding-bottom: 6px;
+}
+
+#AnalyticsCardTitle {
+    font-size: 14px;
+    font-weight: 600;
+    color: #E6E6E6;
+    padding-bottom: 4px;
+}
+
+/* ============================================================
+   ANALYTICS — PREMIUM TAB LABELS (Dark Mode)
+   ============================================================ */
+
+QTabWidget#AnalyticsTabs::pane {
+    border: none;
+    background: transparent;
+}
+
+QTabWidget#AnalyticsTabs QTabBar {
+    qproperty-drawBase: 0;
+    background: transparent;
+}
+
+QTabWidget#AnalyticsTabs QTabBar::tab {
+    font-size: 13px;
+    font-weight: 550;
+    padding: 6px 18px;
+    margin-right: 6px;
+    border-radius: 6px;
+    background: transparent;
+    color: #CFCFCF;
+}
+
+QTabWidget#AnalyticsTabs QTabBar::tab:hover {
+    background: rgba(255, 255, 255, 20);
+}
+
+QTabWidget#AnalyticsTabs QTabBar::tab:selected {
+    font-size: 14px;
+    font-weight: 650;
+    color: #FFFFFF;
+    background: rgba(255, 255, 255, 35);
+    border-bottom: 2px solid #FFFFFF;
+}
+
+
+/* ============================================================
+   CHECKBOXES
+   ============================================================ */
+QCheckBox {
+    spacing: 8px;
+    font-size: 14px;
+    color: #E4E7F2;
+}
+
+QCheckBox::indicator {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+QCheckBox::indicator:checked {
+    background-color: #4DA3FF;
+    border: 1px solid #4DA3FF;
+}
+
+
+/* ============================================================
+   COMBOBOX (Theme Selector)
+   ============================================================ */
+QComboBox {
+    background-color: rgba(30, 30, 30, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    padding: 6px 10px;
+    color: #E4E7F2;
+}
+
+QComboBox:hover {
+    border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+QComboBox::drop-down {
+    border: none;
+}
+
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+QPushButton {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    padding: 8px 14px;
+    color: #E4E7F2;
+}
+
+QPushButton:hover {
+    background-color: rgba(255, 255, 255, 0.10);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+
+
+
+
+
+
+
+
+/* Dark Mode – Copilot-style white overlay scrollbar */
+QScrollBar:vertical {
+    background: transparent;
+    width: 6px;
+    margin: 0px;
+}
+
+QScrollBar::handle:vertical {
+    background: rgba(255, 255, 255, 90);   /* soft white */
+    border-radius: 3px;
+    min-height: 40px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: rgba(255, 255, 255, 150);  /* brighter on hover */
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    height: 0;
+    width: 0;
+}
+
+QScrollBar::add-page:vertical,
+QScrollBar::sub-page:vertical {
+    background: none;
+}
+
+
+
+
+#InsightText {
+    /* Using a stack instead of a single Windows-only font */
+    font-family: ".AppleSystemUIFont", "Segoe UI", sans-serif;
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+
+/* ============================================================
+   SETTINGS SPECIFIC OVERRIDES (DARK MODE ONLY)
+   ============================================================ */
+
+/* 1. Subtitles (Section Labels) - The "Cream White" tint */
+AppearancePage QLabel#SectionLabel,
+NotificationsPage QLabel#SectionLabel, 
+DataStoragePage QLabel#SectionLabel {
+    color: #E2E8F0 !important; /* Soft Cream/Slate White */
+    font-weight: 800;
+    font-size: 10px;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+}
+
+/* 2. Export and Import writing - Pure White */
+/* This specifically targets the text of the buttons in the backup group */
+DataStoragePage QFrame QPushButton {
+    color: #FFFFFF !important; 
+    font-weight: 600;
+}
+
+/* 3. About & Privacy Green Card writing - Pure White */
+AboutPage QFrame QLabel {
+    color: #FFFFFF !important;
+}
+
+
+
+
+
+
+
+
+
+
+/* --- DARK MODE DANGER ZONE --- */
+
+/* The Header */
+DataStoragePage QLabel#SectionLabel[text="DANGER ZONE"] {
+    color: #F87171 !important; /* Soft Coral Red */
+}
+
+/* The Buttons */
+QPushButton.danger-button {
+    color: #F87171 !important;
+    font-weight: 700 !important;
+}
+
+/* The Hover Effect */
+QPushButton.danger-button:hover {
+    background-color: rgba(248, 113, 113, 0.1) !important;
+    color: #FCA5A5 !important; /* Lighter pink-red on hover */
+    border-radius: 8px;
+}
+
+
+
+
