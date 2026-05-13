@@ -238,7 +238,6 @@
 
 
 
-
 name: Build and Upload to App Store
 on: [push, workflow_dispatch]
 
@@ -260,6 +259,7 @@ jobs:
 
       - name: Build App
         run: |
+          # Build the bundle
           pyinstaller --noconfirm --windowed \
           --name "K-Mends Wellbeing" \
           --osx-bundle-identifier "com.kirkmends.wellbeing" \
@@ -294,26 +294,26 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
           security list-keychain -d user -s $KEYCHAIN_PATH
 
-      - name: Manual Code Sign (The Fix for 90334 Errors)
+      - name: Manual Code Sign (The Space-Proof Fix)
         run: |
-          # Use quotes everywhere to handle the space in "K-Mends Wellbeing"
           IDENTITY="VGUZ6D2NST"
+          APP_NAME="K-Mends Wellbeing"
           
-          # 1. Sign internal components
-          find "dist/K-Mends Wellbeing.app/Contents/Frameworks" -type f \( -name "*.dylib" -or -name "*.framework" -or -name "*.so" \) -print0 | xargs -0 codesign --force --verify --verbose --options runtime --sign "$IDENTITY"
+          # 1. Sign internal components (using -print0 to handle spaces safely)
+          find "dist/$APP_NAME.app/Contents/Frameworks" -type f \( -name "*.dylib" -or -name "*.framework" -or -name "*.so" \) -print0 | xargs -0 codesign --force --verify --verbose --options runtime --sign "$IDENTITY"
 
-          # 2. Sign main executable
-          codesign --force --verify --verbose --options runtime --entitlements entitlements.plist --sign "$IDENTITY" "dist/K-Mends Wellbeing.app/Contents/MacOS/K-Mends Wellbeing"
+          # 2. Sign the main executable
+          codesign --force --verify --verbose --options runtime --entitlements entitlements.plist --sign "$IDENTITY" "dist/$APP_NAME.app/Contents/MacOS/$APP_NAME"
 
-          # 3. Finalize bundle
-          codesign --force --verify --verbose --options runtime --entitlements entitlements.plist --sign "$IDENTITY" "dist/K-Mends Wellbeing.app"
+          # 3. Finalize the app bundle signature
+          codesign --force --verify --verbose --options runtime --entitlements entitlements.plist --sign "$IDENTITY" "dist/$APP_NAME.app"
 
       - name: Upload to App Store Connect
         env:
           APPLE_ID: "kirkmendsa@gmail.com"
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
         run: |
-          # Wrap paths in quotes here too
+          # Use productbuild to create a signed installer package
           productbuild --complex-the-package-path "dist/K-Mends Wellbeing.app" --identifier "com.kirkmends.wellbeing" --version "1.3.1" "dist/K-MendsWellbeing.pkg"
           
           xcrun altool --upload-package "dist/K-MendsWellbeing.pkg" \
