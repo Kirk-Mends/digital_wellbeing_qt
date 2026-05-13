@@ -16,21 +16,18 @@ jobs:
 
       - name: Install dependencies
         run: |
-          # 1. Update pip
           pip install --upgrade pip
-          # 2. Install standard tools
-          pip install PySide6 pyinstaller
-          # 3. FORCE the Universal version of psutil to fix the build error
-          pip install --only-binary=:all: --platform macosx_12_0_universal2 psutil
-          # 4. Install any other requirements
+          # We install everything normally; simple is better here
+          pip install PySide6 pyinstaller psutil
           if [ -f req.txt ]; then pip install -r req.txt; fi
 
-      - name: Build Universal App
+      - name: Build App
         run: |
+          # Note: We removed the 'universal2' tag to avoid binary mismatch errors. 
+          # Apple Silicon Macs can run Intel builds perfectly via Rosetta.
           pyinstaller --noconfirm --windowed \
           --name "DigitalWellbeing" \
           --icon "assets/icons/icon.icns" \
-          --target-architecture universal2 \
           --add-data "assets:assets" \
           --add-data "core:core" \
           --add-data "ui:ui" \
@@ -41,16 +38,18 @@ jobs:
           APPLE_ID: "kirkmendsa@gmail.com"
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
         run: |
+          # Zip it up for Apple
           ditto -c -k --sequesterRsrc --keepParent "dist/DigitalWellbeing.app" "dist/DigitalWellbeing.zip"
           
+          # Uploading...
           xcrun altool --upload-app \
             --type osx \
             --file "dist/DigitalWellbeing.zip" \
             --username "$APPLE_ID" \
             --password "$APPLE_PASSWORD"
 
-      - name: Upload Artifact (For your own download)
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Universal-App-Package
+          name: Mac-App-Build
           path: dist/*.app
