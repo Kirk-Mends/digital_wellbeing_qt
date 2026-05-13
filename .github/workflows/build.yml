@@ -72,6 +72,9 @@
 
 
 
+
+
+
 name: Build and Upload to App Store
 on: [push, workflow_dispatch]
 
@@ -91,13 +94,11 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          # Added numpy and pyqtgraph to be safe
           pip install PySide6 pyinstaller psutil numpy pyqtgraph
           if [ -f req.txt ]; then pip install -r req.txt; fi
 
       - name: Build App
         run: |
-          # Professional Name + All Data Folders + Robust Library Collection
           pyinstaller --noconfirm --windowed \
           --name "K-Mends Wellbeing" \
           --osx-bundle-identifier "com.kirkmends.wellbeing" \
@@ -105,7 +106,6 @@ jobs:
           --add-data "assets:assets" \
           --add-data "core:core" \
           --add-data "ui:ui" \
-          --add-data "data:data" \
           --collect-all PySide6 \
           --collect-all pyqtgraph \
           main.py
@@ -113,8 +113,6 @@ jobs:
           APP_PATH="dist/K-Mends Wellbeing.app"
           /usr/libexec/PlistBuddy -c "Delete :CFBundleVersion" "$APP_PATH/Contents/Info.plist" || true
           /usr/libexec/PlistBuddy -c "Delete :CFBundleShortVersionString" "$APP_PATH/Contents/Info.plist" || true
-          
-          # Setting to 1.3.1 so you can easily spot this improved version
           /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${{ github.run_number }}" "$APP_PATH/Contents/Info.plist"
           /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.3.1" "$APP_PATH/Contents/Info.plist"
 
@@ -132,7 +130,7 @@ jobs:
             --bundle-id "com.kirkmends.wellbeing" \
             --apple-id "6763799090" \
             --bundle-version "${{ github.run_number }}" \
-            --bundle-short-version-string "1.3.1"
+            --bundle-short-version-string "1.3.0"
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
