@@ -22,7 +22,7 @@ jobs:
 
       - name: Build App
         run: |
-          # We add the bundle-identifier here
+          # Build the .app bundle
           pyinstaller --noconfirm --windowed \
           --name "DigitalWellbeing" \
           --osx-bundle-identifier "com.kirkmends.digitalwellbeing" \
@@ -32,18 +32,20 @@ jobs:
           --add-data "ui:ui" \
           main.py
           
-          # This adds the version numbers Apple's error was complaining about
-          /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string 1.0.0" "dist/DigitalWellbeing.app/Contents/Info.plist"
-          /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0.0" "dist/DigitalWellbeing.app/Contents/Info.plist"
+          # Fix versioning: 'Set' overrides existing entries to prevent crashes.
+          # CFBundleVersion uses the unique GitHub run number so Apple always accepts it.
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ github.run_number }}" "dist/DigitalWellbeing.app/Contents/Info.plist"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.0" "dist/DigitalWellbeing.app/Contents/Info.plist"
 
       - name: Upload to App Store Connect
         env:
           APPLE_ID: "kirkmendsa@gmail.com"
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
         run: |
-          # Re-zip it now that the version info is inside
+          # Create the zip package
           ditto -c -k --sequesterRsrc --keepParent "dist/DigitalWellbeing.app" "dist/DigitalWellbeing.zip"
           
+          # Send it to Apple
           xcrun altool --upload-app \
             --type osx \
             --file "dist/DigitalWellbeing.zip" \
