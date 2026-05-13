@@ -45,13 +45,13 @@ jobs:
           APPLE_ID: "kirkmendsa@gmail.com"
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
         run: |
-          # Create the package
-          ditto -c -k --sequesterRsrc --keepParent "dist/DigitalWellbeing.app" "dist/DigitalWellbeing.zip"
+          # Packaging for macOS specifically
+          ditto -c -k --sequesterRsrc --keepParent "dist/DigitalWellbeing.app" "dist/DigitalWellbeing.pkg"
           
-          # CRITICAL: We changed --type to 'macos' to fix the iOS error
-          xcrun altool --upload-app \
+          # We use --upload-package with --type macos. 
+          # This is the most reliable command for desktop apps.
+          xcrun altool --upload-package "dist/DigitalWellbeing.pkg" \
             --type macos \
-            --file "dist/DigitalWellbeing.zip" \
             --username "$APPLE_ID" \
             --password "$APPLE_PASSWORD" \
             --bundle-id "com.kirkmends.wellbeing"
