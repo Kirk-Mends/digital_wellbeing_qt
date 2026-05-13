@@ -17,31 +17,33 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          # We install everything normally; simple is better here
           pip install PySide6 pyinstaller psutil
           if [ -f req.txt ]; then pip install -r req.txt; fi
 
       - name: Build App
         run: |
-          # Note: We removed the 'universal2' tag to avoid binary mismatch errors. 
-          # Apple Silicon Macs can run Intel builds perfectly via Rosetta.
+          # We add the bundle-identifier here
           pyinstaller --noconfirm --windowed \
           --name "DigitalWellbeing" \
+          --osx-bundle-identifier "com.kirkmends.digitalwellbeing" \
           --icon "assets/icons/icon.icns" \
           --add-data "assets:assets" \
           --add-data "core:core" \
           --add-data "ui:ui" \
           main.py
+          
+          # This adds the version numbers Apple's error was complaining about
+          /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string 1.0.0" "dist/DigitalWellbeing.app/Contents/Info.plist"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0.0" "dist/DigitalWellbeing.app/Contents/Info.plist"
 
       - name: Upload to App Store Connect
         env:
           APPLE_ID: "kirkmendsa@gmail.com"
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
         run: |
-          # Zip it up for Apple
+          # Re-zip it now that the version info is inside
           ditto -c -k --sequesterRsrc --keepParent "dist/DigitalWellbeing.app" "dist/DigitalWellbeing.zip"
           
-          # Uploading...
           xcrun altool --upload-app \
             --type osx \
             --file "dist/DigitalWellbeing.zip" \
