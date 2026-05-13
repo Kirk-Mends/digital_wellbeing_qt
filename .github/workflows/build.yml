@@ -22,7 +22,6 @@ jobs:
 
       - name: Build App
         run: |
-          # Use the EXACT bundle ID from your Apple screenshot
           pyinstaller --noconfirm --windowed \
           --name "DigitalWellbeing" \
           --osx-bundle-identifier "com.kirkmends.wellbeing" \
@@ -32,11 +31,9 @@ jobs:
           --add-data "ui:ui" \
           main.py
           
-          # Clean slate for the Plist
+          # Clean and set versions
           /usr/libexec/PlistBuddy -c "Delete :CFBundleVersion" "dist/DigitalWellbeing.app/Contents/Info.plist" || true
           /usr/libexec/PlistBuddy -c "Delete :CFBundleShortVersionString" "dist/DigitalWellbeing.app/Contents/Info.plist" || true
-          
-          # Bumping to 1.3.0 to skip over your old 1.2.x TestFlight failures
           /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${{ github.run_number }}" "dist/DigitalWellbeing.app/Contents/Info.plist"
           /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.3.0" "dist/DigitalWellbeing.app/Contents/Info.plist"
 
@@ -45,16 +42,21 @@ jobs:
           APPLE_ID: "kirkmendsa@gmail.com"
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
         run: |
-          # Packaging for macOS specifically
+          # We use ditto to create the package Apple expects
           ditto -c -k --sequesterRsrc --keepParent "dist/DigitalWellbeing.app" "dist/DigitalWellbeing.pkg"
           
-          # We use --upload-package with --type macos. 
-          # This is the most reliable command for desktop apps.
+          # We added the 3 missing flags Apple was asking for in the logs:
+          # --apple-id (from your screenshot: 6763799090)
+          # --bundle-version
+          # --bundle-short-version-string
           xcrun altool --upload-package "dist/DigitalWellbeing.pkg" \
             --type macos \
             --username "$APPLE_ID" \
             --password "$APPLE_PASSWORD" \
-            --bundle-id "com.kirkmends.wellbeing"
+            --bundle-id "com.kirkmends.wellbeing" \
+            --apple-id "6763799090" \
+            --bundle-version "${{ github.run_number }}" \
+            --bundle-short-version-string "1.3.0"
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
