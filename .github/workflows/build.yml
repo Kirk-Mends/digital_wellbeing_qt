@@ -16,8 +16,13 @@ jobs:
 
       - name: Install dependencies
         run: |
-          # Added psutil here since we found it was missing earlier!
-          pip install PySide6 pyinstaller psutil
+          # 1. Update pip
+          pip install --upgrade pip
+          # 2. Install standard tools
+          pip install PySide6 pyinstaller
+          # 3. FORCE the Universal version of psutil to fix the build error
+          pip install --only-binary=:all: --platform macosx_12_0_universal2 psutil
+          # 4. Install any other requirements
           if [ -f req.txt ]; then pip install -r req.txt; fi
 
       - name: Build Universal App
@@ -31,13 +36,11 @@ jobs:
           --add-data "ui:ui" \
           main.py
 
-      # --- NEW STEP: UPLOAD TO APPLE ---
       - name: Upload to App Store Connect
         env:
           APPLE_ID: "kirkmendsa@gmail.com"
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
         run: |
-          # We zip the app because Apple's uploader requires a single package file
           ditto -c -k --sequesterRsrc --keepParent "dist/DigitalWellbeing.app" "dist/DigitalWellbeing.zip"
           
           xcrun altool --upload-app \
