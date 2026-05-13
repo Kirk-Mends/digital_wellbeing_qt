@@ -75,6 +75,77 @@
 
 
 
+# name: Build and Upload to App Store
+# on: [push, workflow_dispatch]
+
+# jobs:
+#   build:
+#     runs-on: macos-latest
+#     steps:
+#       - uses: actions/checkout@v4
+#         with:
+#           submodules: false
+
+#       - name: Set up Python
+#         uses: actions/setup-python@v5
+#         with:
+#           python-version: '3.11'
+
+#       - name: Install dependencies
+#         run: |
+#           pip install --upgrade pip
+#           pip install PySide6 pyinstaller psutil numpy pyqtgraph
+#           if [ -f req.txt ]; then pip install -r req.txt; fi
+
+#       - name: Build App
+#         run: |
+#           pyinstaller --noconfirm --windowed \
+#           --name "K-Mends Wellbeing" \
+#           --osx-bundle-identifier "com.kirkmends.wellbeing" \
+#           --icon "assets/icons/icon.icns" \
+#           --add-data "assets:assets" \
+#           --add-data "core:core" \
+#           --add-data "ui:ui" \
+#           --collect-all PySide6 \
+#           --collect-all pyqtgraph \
+#           main.py
+          
+#           APP_PATH="dist/K-Mends Wellbeing.app"
+#           /usr/libexec/PlistBuddy -c "Delete :CFBundleVersion" "$APP_PATH/Contents/Info.plist" || true
+#           /usr/libexec/PlistBuddy -c "Delete :CFBundleShortVersionString" "$APP_PATH/Contents/Info.plist" || true
+#           /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${{ github.run_number }}" "$APP_PATH/Contents/Info.plist"
+#           /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.3.1" "$APP_PATH/Contents/Info.plist"
+
+#       - name: Upload to App Store Connect
+#         env:
+#           APPLE_ID: "kirkmendsa@gmail.com"
+#           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+#         run: |
+#           ditto -c -k --sequesterRsrc --keepParent "dist/K-Mends Wellbeing.app" "dist/K-MendsWellbeing.pkg"
+          
+#           xcrun altool --upload-package "dist/K-MendsWellbeing.pkg" \
+#             --type macos \
+#             --username "$APPLE_ID" \
+#             --password "$APPLE_PASSWORD" \
+#             --bundle-id "com.kirkmends.wellbeing" \
+#             --apple-id "6763799090" \
+#             --bundle-version "${{ github.run_number }}" \
+#             --bundle-short-version-string "1.3.1"
+
+#       - name: Upload Artifact
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: Mac-App-Build
+#           path: dist/*.app
+
+
+
+
+
+
+
+
+
 name: Build and Upload to App Store
 on: [push, workflow_dispatch]
 
@@ -83,8 +154,6 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: false
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -95,10 +164,10 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install PySide6 pyinstaller psutil numpy pyqtgraph
-          if [ -f req.txt ]; then pip install -r req.txt; fi
 
       - name: Build App
         run: |
+          # Build the bundle
           pyinstaller --noconfirm --windowed \
           --name "K-Mends Wellbeing" \
           --osx-bundle-identifier "com.kirkmends.wellbeing" \
@@ -110,18 +179,50 @@ jobs:
           --collect-all pyqtgraph \
           main.py
           
+          # Set Versioning
           APP_PATH="dist/K-Mends Wellbeing.app"
           /usr/libexec/PlistBuddy -c "Delete :CFBundleVersion" "$APP_PATH/Contents/Info.plist" || true
           /usr/libexec/PlistBuddy -c "Delete :CFBundleShortVersionString" "$APP_PATH/Contents/Info.plist" || true
           /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${{ github.run_number }}" "$APP_PATH/Contents/Info.plist"
           /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.3.1" "$APP_PATH/Contents/Info.plist"
 
+      - name: Install Apple Certificate
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode --output $CERTIFICATE_PATH
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+      - name: Manual Code Sign (The Fix for 90334 Errors)
+        run: |
+          APP_PATH="dist/K-Mends Wellbeing.app"
+          IDENTITY="Apple Distribution: Kirk Mends (VGUZ6D2NST)" # Double check this matches your cert name
+          
+          # 1. Sign internal components first (Libraries and Frameworks)
+          # We avoid --deep to prevent identifier mismatches
+          find "$APP_PATH/Contents/Frameworks" -type f \( -name "*.dylib" -or -name "*.framework" -or -name "*.so" \) | xargs codesign --force --verify --verbose --options runtime --sign "$IDENTITY"
+
+          # 2. Sign the main executable with your Entitlements
+          codesign --force --verify --verbose --options runtime --entitlements entitlements.plist --sign "$IDENTITY" "$APP_PATH/Contents/MacOS/K-Mends Wellbeing"
+
+          # 3. Finalize the app bundle signature
+          codesign --force --verify --verbose --options runtime --entitlements entitlements.plist --sign "$IDENTITY" "$APP_PATH"
+
       - name: Upload to App Store Connect
         env:
           APPLE_ID: "kirkmendsa@gmail.com"
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
         run: |
-          ditto -c -k --sequesterRsrc --keepParent "dist/K-Mends Wellbeing.app" "dist/K-MendsWellbeing.pkg"
+          # Use productbuild to create a signed installer package for the App Store
+          productbuild --complex-the-package-path "dist/K-Mends Wellbeing.app" --identifier "com.kirkmends.wellbeing" --version "1.3.1" "dist/K-MendsWellbeing.pkg"
           
           xcrun altool --upload-package "dist/K-MendsWellbeing.pkg" \
             --type macos \
@@ -130,10 +231,4 @@ jobs:
             --bundle-id "com.kirkmends.wellbeing" \
             --apple-id "6763799090" \
             --bundle-version "${{ github.run_number }}" \
-            --bundle-short-version-string "1.3.0"
-
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: Mac-App-Build
-          path: dist/*.app
+            --bundle-short-version-string "1.3.1"
