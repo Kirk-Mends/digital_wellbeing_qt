@@ -303,19 +303,27 @@ jobs:
           security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
 
-      - name: Manual Code Sign (Deep Clean)
+      - name: Manual Code Sign (The Sledgehammer)
         run: |
           IDENTITY="VGUZ6D2NST"
           APP_PATH="dist/K-Mends Wellbeing.app"
+          ENTITLEMENTS="entitlements.plist"
+
+          echo "Cleaning extended attributes..."
+          xattr -cr "$APP_PATH"
+
+          echo "Starting recursive bottom-up signing..."
+          # This signs every single file and folder, starting at the deepest level
+          find "$APP_PATH" -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
+
+          echo "Signing the main executable with entitlements..."
+          codesign --force --verify --verbose --options runtime --entitlements "$ENTITLEMENTS" --sign "$IDENTITY" "$APP_PATH/Contents/MacOS/K-Mends Wellbeing"
+
+          echo "Performing final master seal..."
+          codesign --force --verify --verbose --deep --options runtime --entitlements "$ENTITLEMENTS" --sign "$IDENTITY" "$APP_PATH"
           
-          # Sign everything inside the app from the bottom up
-          find "$APP_PATH/Contents/Frameworks/ui" -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} + || true
-          find "$APP_PATH/Contents/Frameworks/core" -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} + || true
-          find "$APP_PATH/Contents/Resources" -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} + || true
-          find "$APP_PATH/Contents/Frameworks" -name "*.dylib" -or -name "*.so" -or -name "*.app" -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} +
-          
-          codesign --force --verify --verbose --options runtime --entitlements entitlements.plist --sign "$IDENTITY" "$APP_PATH/Contents/MacOS/K-Mends Wellbeing"
-          codesign --force --verify --verbose --deep --options runtime --entitlements entitlements.plist --sign "$IDENTITY" "$APP_PATH"
+          echo "Final Verification:"
+          codesign --verify --verbose=4 "$APP_PATH"
 
       - name: Upload to App Store Connect
         env:
