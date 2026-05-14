@@ -248,7 +248,7 @@ on: [push, workflow_dispatch]
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -303,7 +303,7 @@ jobs:
           security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
 
-      - name: Manual Code Sign (The Smart Sledgehammer)
+      - name: Manual Code Sign (The Surgical Sledgehammer)
         run: |
           IDENTITY="VGUZ6D2NST"
           APP_PATH="dist/K-Mends Wellbeing.app"
@@ -312,20 +312,18 @@ jobs:
           echo "1. Cleaning extended attributes..."
           xattr -cr "$APP_PATH"
 
-          echo "2. Recursively signing ONLY custom code folders..."
-          # Specifically targeting where sidebar.py and animations.py hide
-          find "$APP_PATH/Contents/Frameworks/ui" -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
-          find "$APP_PATH/Contents/Frameworks/core" -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
-          find "$APP_PATH/Contents/Resources" -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
+          echo "2. Signing ONLY code files (scripts and binaries)..."
+          # This ignores metadata and targets only what needs a signature
+          find "$APP_PATH" -type f \( -name "*.py" -o -name "*.so" -o -name "*.dylib" \) -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
 
-          echo "3. Signing nested App bundles and Libraries..."
-          find "$APP_PATH/Contents/Frameworks" -name "*.app" -or -name "*.dylib" -or -name "*.so" -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \;
+          echo "3. Signing nested helper App bundles..."
+          find "$APP_PATH/Contents/Frameworks" -name "*.app" -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \;
 
           echo "4. Signing the main executable..."
           codesign --force --verify --verbose --options runtime --entitlements "$ENTITLEMENTS" --sign "$IDENTITY" "$APP_PATH/Contents/MacOS/K-Mends Wellbeing"
 
-          echo "5. Applying final Master Seal..."
-          codesign --force --verify --verbose --deep --options runtime --entitlements "$ENTITLEMENTS" --sign "$IDENTITY" "$APP_PATH"
+          echo "5. Final Master Seal (No --deep to avoid format errors)..."
+          codesign --force --verify --verbose --options runtime --entitlements "$ENTITLEMENTS" --sign "$IDENTITY" "$APP_PATH"
 
       - name: Upload to App Store Connect
         env:
