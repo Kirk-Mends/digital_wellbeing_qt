@@ -303,7 +303,7 @@ jobs:
           security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
 
-      - name: Manual Code Sign (The Final Sledgehammer)
+      - name: Manual Code Sign (The Absolute Final Sledgehammer)
         run: |
           IDENTITY="VGUZ6D2NST"
           APP_PATH="dist/K-Mends Wellbeing.app"
@@ -312,18 +312,22 @@ jobs:
           echo "1. Cleaning extended attributes..."
           xattr -cr "$APP_PATH"
 
-          echo "2. Signing code files and specifically resource.qrc..."
-          # This hunt now includes .qrc to satisfy the error from your 3:42 AM run
-          find "$APP_PATH" -type f \( -name "*.py" -o -name "*.so" -o -name "*.dylib" -o -name "*.qrc" \) -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
+          echo "2. Signing EVERYTHING in custom folders (JSON, QRC, PY, etc.)..."
+          # This specifically signs every single file in your ui, core, and resources folders.
+          # This fixes the 'stepping_away.json' error from your 3:54 AM screenshot.
+          find "$APP_PATH/Contents/Frameworks/ui" -type f -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
+          find "$APP_PATH/Contents/Frameworks/core" -type f -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
+          find "$APP_PATH/Contents/Resources" -type f -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
 
-          echo "3. Signing nested helper App bundles..."
-          find "$APP_PATH/Contents/Frameworks" -name "*.app" -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
+          echo "3. Signing nested Frameworks, helper Apps, and Binaries..."
+          # This catches Python libraries (.so, .dylib) and bundled apps.
+          find "$APP_PATH/Contents/Frameworks" \( -name "*.app" -o -name "*.dylib" -o -name "*.so" \) -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
 
           echo "4. Signing the main executable..."
           codesign --force --verify --verbose --options runtime --entitlements "$ENTITLEMENTS" --sign "$IDENTITY" "$APP_PATH/Contents/MacOS/K-Mends Wellbeing"
 
           echo "5. Final Master Seal..."
-          # Using --deep here because we have pre-signed the problematic sub-components
+          # The --deep flag now works because we've manually signed all the data sub-components.
           codesign --force --verify --verbose --deep --options runtime --entitlements "$ENTITLEMENTS" --sign "$IDENTITY" "$APP_PATH"
 
       - name: Upload to App Store Connect
