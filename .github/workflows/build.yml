@@ -276,7 +276,7 @@ jobs:
           
           APP_PATH="dist/K-Mends Wellbeing.app"
           
-          # Flatten symlinks
+          # Flatten symlinks - Essential for Apple Store compliance
           mv "$APP_PATH" "dist/K-Mends-Temp.app"
           cp -RL "dist/K-Mends-Temp.app/" "$APP_PATH"
           rm -rf "dist/K-Mends-Temp.app"
@@ -303,14 +303,14 @@ jobs:
           security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
 
-      - name: Manual Code Sign (Nuclear Shorthand)
+      - name: Manual Code Sign (Broad Sweep)
         run: |
-          # Use the Shorthand ID we know works
           IDENTITY="VGUZ6D2NST"
           APP_PATH="dist/K-Mends Wellbeing.app"
           
-          # 1. Sign EVERY .py file specifically to kill the main_window.py error
-          find "$APP_PATH/Contents/Resources" -type f -name "*.py" -print0 | xargs -0 codesign --force --verify --verbose --options runtime --sign "$IDENTITY"
+          # 1. Sign ALL files in your custom source folders (fixes animations.py, sidebar.py, etc.)
+          find "$APP_PATH/Contents/Resources/ui" -type f -print0 | xargs -0 codesign --force --verify --verbose --options runtime --sign "$IDENTITY"
+          find "$APP_PATH/Contents/Resources/core" -type f -print0 | xargs -0 codesign --force --verify --verbose --options runtime --sign "$IDENTITY"
 
           # 2. Sign all binary libraries (.dylib and .so)
           find "$APP_PATH/Contents/Frameworks" -type f \( -name "*.dylib" -or -name "*.so" \) -print0 | xargs -0 codesign --force --verify --verbose --options runtime --sign "$IDENTITY"
@@ -321,7 +321,7 @@ jobs:
           # 4. Sign the main executable
           codesign --force --verify --verbose --options runtime --entitlements entitlements.plist --sign "$IDENTITY" "$APP_PATH/Contents/MacOS/K-Mends Wellbeing"
 
-          # 5. Final Bundle Seal (Deep)
+          # 5. Final Bundle Seal
           codesign --force --verify --verbose --deep --options runtime --entitlements entitlements.plist --sign "$IDENTITY" "$APP_PATH"
 
       - name: Upload to App Store Connect
