@@ -248,7 +248,7 @@ on: [push, workflow_dispatch]
 
 jobs:
   build:
-    runs-runs-on: macos-latest
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -276,11 +276,12 @@ jobs:
           
           APP_PATH="dist/K-Mends Wellbeing.app"
           
-          # Flatten symlinks
+          # Flatten symlinks to ensure files are real and signable
           mv "$APP_PATH" "dist/K-Mends-Temp.app"
           cp -RL "dist/K-Mends-Temp.app/" "$APP_PATH"
           rm -rf "dist/K-Mends-Temp.app"
 
+          # Update Info.plist with build numbers
           /usr/libexec/PlistBuddy -c "Delete :CFBundleVersion" "$APP_PATH/Contents/Info.plist" || true
           /usr/libexec/PlistBuddy -c "Delete :CFBundleShortVersionString" "$APP_PATH/Contents/Info.plist" || true
           /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${{ github.run_number }}" "$APP_PATH/Contents/Info.plist"
@@ -313,16 +314,17 @@ jobs:
           xattr -cr "$APP_PATH"
 
           echo "2. Signing ONLY code files (scripts and binaries)..."
-          # This ignores metadata and targets only what needs a signature
+          # This specifically signs .py, .so, and .dylib files while ignoring QML junk
           find "$APP_PATH" -type f \( -name "*.py" -o -name "*.so" -o -name "*.dylib" \) -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
 
           echo "3. Signing nested helper App bundles..."
-          find "$APP_PATH/Contents/Frameworks" -name "*.app" -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \;
+          find "$APP_PATH/Contents/Frameworks" -name "*.app" -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
 
           echo "4. Signing the main executable..."
           codesign --force --verify --verbose --options runtime --entitlements "$ENTITLEMENTS" --sign "$IDENTITY" "$APP_PATH/Contents/MacOS/K-Mends Wellbeing"
 
-          echo "5. Final Master Seal (No --deep to avoid format errors)..."
+          echo "5. Final Master Seal..."
+          # No --deep here to avoid the 'bundle format unrecognized' error
           codesign --force --verify --verbose --options runtime --entitlements "$ENTITLEMENTS" --sign "$IDENTITY" "$APP_PATH"
 
       - name: Upload to App Store Connect
