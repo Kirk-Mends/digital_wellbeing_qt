@@ -238,7 +238,6 @@
 
 
 
-
 name: Build and Upload to App Store
 on: [push, workflow_dispatch]
 
@@ -295,17 +294,21 @@ jobs:
           security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
           security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          
+          # CRITICAL: Add the keychain to the search list and set as default
+          security list-keychains -d user -s $KEYCHAIN_PATH $(security list-keychains -d user | xargs)
+          security default-keychain -s $KEYCHAIN_PATH
+          
           security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
           
-          # Force the system to recognize the identity
-          security find-identity -v -p codesigning $KEYCHAIN_PATH
-          sleep 5
+          # Verify identity is visible
+          security find-identity -v -p codesigning
 
       - name: Manual Code Sign (Deep Recursive Sign)
         run: |
-          # The full identity string makes it easier for the keychain to find
-          IDENTITY="Apple Distribution: KIRK MENDS ATTAFUAH (VGUZ6D2NST)"
+          # Use the ID directly again, but with the fixed keychain search
+          IDENTITY="VGUZ6D2NST"
           APP_NAME="K-Mends Wellbeing"
           APP_PATH="dist/$APP_NAME.app"
           
