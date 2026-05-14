@@ -238,6 +238,11 @@
 
 
 
+
+
+
+
+
 name: Build and Upload to App Store
 on: [push, workflow_dispatch]
 
@@ -270,7 +275,7 @@ jobs:
           --collect-all pyqtgraph \
           main.py
           
-          # 1. Flatten symlinks completely (The Steamroller)
+          # Flatten symlinks completely
           mv "dist/K-Mends Wellbeing.app" "dist/K-Mends-Temp.app"
           cp -RL "dist/K-Mends-Temp.app/" "dist/K-Mends Wellbeing.app"
           rm -rf "dist/K-Mends-Temp.app"
@@ -290,30 +295,28 @@ jobs:
           CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
           echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode --output $CERTIFICATE_PATH
-          
           security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
           security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          
           security list-keychains -d user -s $KEYCHAIN_PATH $(security list-keychains -d user | xargs)
           security default-keychain -s $KEYCHAIN_PATH
-          
           security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
 
-      - name: Manual Code Sign (Targeted Fix)
+      - name: Manual Code Sign (Deep Folder Sweep)
         run: |
           IDENTITY="VGUZ6D2NST"
           APP_NAME="K-Mends Wellbeing"
           APP_PATH="dist/$APP_NAME.app"
           
-          # 1. Sign internal libraries and frameworks specifically
-          find "$APP_PATH/Contents/Frameworks" -type f \( -name "*.dylib" -or -name "*.framework" -or -name "*.so" \) -print0 | xargs -0 codesign --force --verify --verbose --options runtime --sign "$IDENTITY"
+          # 1. Sign internal libraries/binary frameworks (skipping the 'ambiguous' bundles)
+          find "$APP_PATH/Contents/Frameworks" -type f \( -name "*.dylib" -or -name "*.so" \) -print0 | xargs -0 codesign --force --verify --verbose --options runtime --sign "$IDENTITY"
 
-          # 2. Sign the specific UI files that caused the "not signed" error
-          find "$APP_PATH/Contents/Resources/ui" -type f -name "*.py" -print0 | xargs -0 codesign --force --verify --verbose --options runtime --sign "$IDENTITY"
+          # 2. Sign all your custom app data/code (ui, core, assets)
+          # This fixes the sidebar.py and main_window.py errors in one go
+          find "$APP_PATH/Contents/Resources" -type f -print0 | xargs -0 codesign --force --verify --verbose --options runtime --sign "$IDENTITY"
 
-          # 3. Sign nested .app bundles (Assistant, etc.)
+          # 3. Sign nested .app bundles (Assistant, Linguist, etc.)
           find "$APP_PATH/Contents/Frameworks" -name "*.app" -print0 | xargs -0 codesign --force --verify --verbose --options runtime --sign "$IDENTITY"
 
           # 4. Sign the main executable
