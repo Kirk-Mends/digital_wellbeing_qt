@@ -270,7 +270,7 @@ jobs:
           --collect-all pyqtgraph \
           main.py
           
-          # Flatten symlinks completely
+          # 1. Flatten symlinks completely (The Steamroller)
           mv "dist/K-Mends Wellbeing.app" "dist/K-Mends-Temp.app"
           cp -RL "dist/K-Mends-Temp.app/" "dist/K-Mends Wellbeing.app"
           rm -rf "dist/K-Mends-Temp.app"
@@ -295,33 +295,31 @@ jobs:
           security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
           
-          # CRITICAL: Add the keychain to the search list and set as default
           security list-keychains -d user -s $KEYCHAIN_PATH $(security list-keychains -d user | xargs)
           security default-keychain -s $KEYCHAIN_PATH
           
           security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          
-          # Verify identity is visible
-          security find-identity -v -p codesigning
 
-      - name: Manual Code Sign (Deep Recursive Sign)
+      - name: Manual Code Sign (Targeted Fix)
         run: |
-          # Use the ID directly again, but with the fixed keychain search
           IDENTITY="VGUZ6D2NST"
           APP_NAME="K-Mends Wellbeing"
           APP_PATH="dist/$APP_NAME.app"
           
-          # 1. Sign every single file
-          find "$APP_PATH" -type f -print0 | xargs -0 codesign --force --verify --verbose --options runtime --sign "$IDENTITY"
+          # 1. Sign internal libraries and frameworks specifically
+          find "$APP_PATH/Contents/Frameworks" -type f \( -name "*.dylib" -or -name "*.framework" -or -name "*.so" \) -print0 | xargs -0 codesign --force --verify --verbose --options runtime --sign "$IDENTITY"
 
-          # 2. Sign nested apps
-          find "$APP_PATH" -name "*.app" -print0 | xargs -0 codesign --force --verify --verbose --options runtime --sign "$IDENTITY"
+          # 2. Sign the specific UI files that caused the "not signed" error
+          find "$APP_PATH/Contents/Resources/ui" -type f -name "*.py" -print0 | xargs -0 codesign --force --verify --verbose --options runtime --sign "$IDENTITY"
 
-          # 3. Main executable
+          # 3. Sign nested .app bundles (Assistant, etc.)
+          find "$APP_PATH/Contents/Frameworks" -name "*.app" -print0 | xargs -0 codesign --force --verify --verbose --options runtime --sign "$IDENTITY"
+
+          # 4. Sign the main executable
           codesign --force --verify --verbose --options runtime --entitlements entitlements.plist --sign "$IDENTITY" "$APP_PATH/Contents/MacOS/$APP_NAME"
 
-          # 4. Final bundle
+          # 5. Finalize the main app bundle
           codesign --force --verify --verbose --options runtime --entitlements entitlements.plist --sign "$IDENTITY" "$APP_PATH"
 
       - name: Upload to App Store Connect
