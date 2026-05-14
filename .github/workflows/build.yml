@@ -242,7 +242,6 @@
 
 
 
-
 name: Build and Upload to App Store
 on: [push, workflow_dispatch]
 
@@ -304,7 +303,7 @@ jobs:
           security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
 
-      - name: Manual Code Sign (The Surgical Sledgehammer)
+      - name: Manual Code Sign (The Final Sledgehammer)
         run: |
           IDENTITY="VGUZ6D2NST"
           APP_PATH="dist/K-Mends Wellbeing.app"
@@ -313,9 +312,9 @@ jobs:
           echo "1. Cleaning extended attributes..."
           xattr -cr "$APP_PATH"
 
-          echo "2. Signing ONLY code files (scripts and binaries)..."
-          # This specifically signs .py, .so, and .dylib files while ignoring QML junk
-          find "$APP_PATH" -type f \( -name "*.py" -o -name "*.so" -o -name "*.dylib" \) -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
+          echo "2. Signing code files and specifically resource.qrc..."
+          # This hunt now includes .qrc to satisfy the error from your 3:42 AM run
+          find "$APP_PATH" -type f \( -name "*.py" -o -name "*.so" -o -name "*.dylib" -o -name "*.qrc" \) -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
 
           echo "3. Signing nested helper App bundles..."
           find "$APP_PATH/Contents/Frameworks" -name "*.app" -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
@@ -324,8 +323,8 @@ jobs:
           codesign --force --verify --verbose --options runtime --entitlements "$ENTITLEMENTS" --sign "$IDENTITY" "$APP_PATH/Contents/MacOS/K-Mends Wellbeing"
 
           echo "5. Final Master Seal..."
-          # No --deep here to avoid the 'bundle format unrecognized' error
-          codesign --force --verify --verbose --options runtime --entitlements "$ENTITLEMENTS" --sign "$IDENTITY" "$APP_PATH"
+          # Using --deep here because we have pre-signed the problematic sub-components
+          codesign --force --verify --verbose --deep --options runtime --entitlements "$ENTITLEMENTS" --sign "$IDENTITY" "$APP_PATH"
 
       - name: Upload to App Store Connect
         env:
