@@ -236,7 +236,6 @@
 
 
 
-
 name: Build and Upload to App Store
 on: [push, workflow_dispatch]
 
@@ -269,19 +268,12 @@ jobs:
           --collect-all pyqtgraph \
           main.py
           
-          APP_PATH="dist/K-Mends Wellbeing.app"
-          
-          # FIX SYMLINKS: This replaces aliases with real files so they can be signed
-          find "$APP_PATH" -type l -exec sh -c '
-            for link; do
-              target=$(readlink "$link")
-              if [ -f "$target" ]; then
-                rm "$link"
-                cp "$target" "$link"
-              fi
-            done
-          ' sh {} +
+          # THE STEAMROLLER: Replace the entire app folder with a version that has NO symlinks
+          mv "dist/K-Mends Wellbeing.app" "dist/K-Mends-Temp.app"
+          cp -RL "dist/K-Mends-Temp.app/" "dist/K-Mends Wellbeing.app"
+          rm -rf "dist/K-Mends-Temp.app"
 
+          APP_PATH="dist/K-Mends Wellbeing.app"
           /usr/libexec/PlistBuddy -c "Delete :CFBundleVersion" "$APP_PATH/Contents/Info.plist" || true
           /usr/libexec/PlistBuddy -c "Delete :CFBundleShortVersionString" "$APP_PATH/Contents/Info.plist" || true
           /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${{ github.run_number }}" "$APP_PATH/Contents/Info.plist"
@@ -303,22 +295,22 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
           security list-keychain -d user -s $KEYCHAIN_PATH
 
-      - name: Manual Code Sign (Deep Scan Fix)
+      - name: Manual Code Sign (The Final Boss Fix)
         run: |
           IDENTITY="VGUZ6D2NST"
           APP_NAME="K-Mends Wellbeing"
           APP_PATH="dist/$APP_NAME.app"
           
-          # 1. Sign internal libraries/frameworks
+          # 1. Sign internal libraries and frameworks
           find "$APP_PATH/Contents/Frameworks" -type f \( -name "*.dylib" -or -name "*.framework" -or -name "*.so" \) -print0 | xargs -0 codesign --force --verify --verbose --options runtime --sign "$IDENTITY"
 
-          # 2. Sign any nested .app bundles (like Assistant.app)
+          # 2. Sign nested .app bundles (like Assistant.app)
           find "$APP_PATH/Contents/Frameworks" -name "*.app" -print0 | xargs -0 codesign --force --verify --verbose --options runtime --sign "$IDENTITY"
 
           # 3. Sign the main executable
           codesign --force --verify --verbose --options runtime --entitlements entitlements.plist --sign "$IDENTITY" "$APP_PATH/Contents/MacOS/$APP_NAME"
 
-          # 4. Finalize bundle
+          # 4. Finalize bundle signature
           codesign --force --verify --verbose --options runtime --entitlements entitlements.plist --sign "$IDENTITY" "$APP_PATH"
 
       - name: Upload to App Store Connect
