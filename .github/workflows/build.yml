@@ -264,6 +264,7 @@ jobs:
 
       - name: Build App
         run: |
+          # We use --collect-all but we will clean it up immediately after
           pyinstaller --noconfirm --windowed \
           --name "K-Mends Wellbeing" \
           --osx-bundle-identifier "com.kirkmends.wellbeing" \
@@ -272,15 +273,18 @@ jobs:
           --add-data "core:core" \
           --add-data "ui:ui" \
           --collect-all PySide6 \
-          --collect-all pyqtgraph \
           main.py
           
-          # Flatten symlinks completely
-          mv "dist/K-Mends Wellbeing.app" "dist/K-Mends-Temp.app"
-          cp -RL "dist/K-Mends-Temp.app/" "dist/K-Mends Wellbeing.app"
+          APP_PATH="dist/K-Mends Wellbeing.app"
+
+          # 1. REMOVE unnecessary bloat that confuses codesign (Designer, etc)
+          rm -rf "$APP_PATH/Contents/Resources/PySide6/Qt/qml/QtQuick3D/designer"
+          
+          # 2. Flatten symlinks
+          mv "$APP_PATH" "dist/K-Mends-Temp.app"
+          cp -RL "dist/K-Mends-Temp.app/" "$APP_PATH"
           rm -rf "dist/K-Mends-Temp.app"
 
-          APP_PATH="dist/K-Mends Wellbeing.app"
           /usr/libexec/PlistBuddy -c "Delete :CFBundleVersion" "$APP_PATH/Contents/Info.plist" || true
           /usr/libexec/PlistBuddy -c "Delete :CFBundleShortVersionString" "$APP_PATH/Contents/Info.plist" || true
           /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${{ github.run_number }}" "$APP_PATH/Contents/Info.plist"
@@ -303,26 +307,26 @@ jobs:
           security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
 
-      - name: Manual Code Sign (Deep Folder Sweep)
+      - name: Manual Code Sign (The Surgeon's Fix)
         run: |
           IDENTITY="VGUZ6D2NST"
           APP_NAME="K-Mends Wellbeing"
           APP_PATH="dist/$APP_NAME.app"
           
-          # 1. Sign internal libraries/binary frameworks (skipping the 'ambiguous' bundles)
+          # 1. Sign only BINARIES (dylib, so) - This skips the thousands of PNGs
           find "$APP_PATH/Contents/Frameworks" -type f \( -name "*.dylib" -or -name "*.so" \) -print0 | xargs -0 codesign --force --verify --verbose --options runtime --sign "$IDENTITY"
 
-          # 2. Sign all your custom app data/code (ui, core, assets)
-          # This fixes the sidebar.py and main_window.py errors in one go
-          find "$APP_PATH/Contents/Resources" -type f -print0 | xargs -0 codesign --force --verify --verbose --options runtime --sign "$IDENTITY"
+          # 2. Sign only your actual Python code folders
+          find "$APP_PATH/Contents/Resources/ui" -type f -name "*.py" -print0 | xargs -0 codesign --force --verify --verbose --options runtime --sign "$IDENTITY"
+          find "$APP_PATH/Contents/Resources/core" -type f -name "*.py" -print0 | xargs -0 codesign --force --verify --verbose --options runtime --sign "$IDENTITY"
 
-          # 3. Sign nested .app bundles (Assistant, Linguist, etc.)
+          # 3. Sign nested Apps
           find "$APP_PATH/Contents/Frameworks" -name "*.app" -print0 | xargs -0 codesign --force --verify --verbose --options runtime --sign "$IDENTITY"
 
           # 4. Sign the main executable
           codesign --force --verify --verbose --options runtime --entitlements entitlements.plist --sign "$IDENTITY" "$APP_PATH/Contents/MacOS/$APP_NAME"
 
-          # 5. Finalize the main app bundle
+          # 5. Finalize Bundle
           codesign --force --verify --verbose --options runtime --entitlements entitlements.plist --sign "$IDENTITY" "$APP_PATH"
 
       - name: Upload to App Store Connect
