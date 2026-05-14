@@ -274,12 +274,13 @@ jobs:
           --collect-all PySide6 \
           main.py
           
-          # Flatten symlinks completely (Essential for Apple)
-          mv "dist/K-Mends Wellbeing.app" "dist/K-Mends-Temp.app"
-          cp -RL "dist/K-Mends-Temp.app/" "dist/K-Mends Wellbeing.app"
+          APP_PATH="dist/K-Mends Wellbeing.app"
+          
+          # Flatten symlinks - Essential to prevent 'Assistant.app' errors
+          mv "$APP_PATH" "dist/K-Mends-Temp.app"
+          cp -RL "dist/K-Mends-Temp.app/" "$APP_PATH"
           rm -rf "dist/K-Mends-Temp.app"
 
-          APP_PATH="dist/K-Mends Wellbeing.app"
           /usr/libexec/PlistBuddy -c "Delete :CFBundleVersion" "$APP_PATH/Contents/Info.plist" || true
           /usr/libexec/PlistBuddy -c "Delete :CFBundleShortVersionString" "$APP_PATH/Contents/Info.plist" || true
           /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${{ github.run_number }}" "$APP_PATH/Contents/Info.plist"
@@ -302,26 +303,28 @@ jobs:
           security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
 
-      - name: Manual Code Sign (Reliable Loop)
+      - name: Manual Code Sign (The Surgical Fix)
         run: |
           IDENTITY="VGUZ6D2NST"
-          APP_NAME="K-Mends Wellbeing"
-          APP_PATH="dist/$APP_NAME.app"
+          APP_PATH="dist/K-Mends Wellbeing.app"
           
-          # 1. Sign all binaries (.dylib and .so) in one sweep
-          find "$APP_PATH" -type f \( -name "*.dylib" -or -name "*.so" \) -print0 | xargs -0 codesign --force --verify --verbose --options runtime --sign "$IDENTITY"
+          # 1. Sign your custom Python code first (Solves the sidebar.py issue)
+          # We target the specific folders to avoid the 5,000 image files
+          find "$APP_PATH/Contents/Resources/ui" -type f -name "*.py" -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} +
+          find "$APP_PATH/Contents/Resources/core" -type f -name "*.py" -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} +
 
-          # 2. Sign your custom Python code and any other files in Resources
-          # We use a loop here to avoid the "ambiguous bundle" error with Qt Frameworks
-          find "$APP_PATH/Contents/Resources" -type f -print0 | xargs -0 codesign --force --verify --verbose --options runtime --sign "$IDENTITY"
+          # 2. Sign only actual BINARIES (dylib and so)
+          # This skips QML and PNG files that don't need individual signatures
+          find "$APP_PATH/Contents/Frameworks" -type f \( -name "*.dylib" -or -name "*.so" \) -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} +
 
-          # 3. Sign nested .app helper bundles
-          find "$APP_PATH/Contents/Frameworks" -name "*.app" -print0 | xargs -0 codesign --force --verify --verbose --options runtime --sign "$IDENTITY"
+          # 3. Sign the nested "Helper" Apps (Linguist, Assistant, etc.)
+          find "$APP_PATH/Contents/Frameworks" -name "*.app" -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} +
 
           # 4. Sign the main executable
-          codesign --force --verify --verbose --options runtime --entitlements entitlements.plist --sign "$IDENTITY" "$APP_PATH/Contents/MacOS/$APP_NAME"
+          codesign --force --verify --verbose --options runtime --entitlements entitlements.plist --sign "$IDENTITY" "$APP_PATH/Contents/MacOS/K-Mends Wellbeing"
 
-          # 5. Finalize the app bundle
+          # 5. The "Master Seal" - Signs the whole bundle once
+          # This handles all those QML files in one go without an ambiguous error
           codesign --force --verify --verbose --options runtime --entitlements entitlements.plist --sign "$IDENTITY" "$APP_PATH"
 
       - name: Upload to App Store Connect
