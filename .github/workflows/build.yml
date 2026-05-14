@@ -276,7 +276,7 @@ jobs:
           
           APP_PATH="dist/K-Mends Wellbeing.app"
           
-          # Flatten symlinks - Essential for Apple Store compliance
+          # Flatten symlinks
           mv "$APP_PATH" "dist/K-Mends-Temp.app"
           cp -RL "dist/K-Mends-Temp.app/" "$APP_PATH"
           rm -rf "dist/K-Mends-Temp.app"
@@ -303,25 +303,18 @@ jobs:
           security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
 
-      - name: Manual Code Sign (Global Sweep)
+      - name: Manual Code Sign (Deep Clean)
         run: |
           IDENTITY="VGUZ6D2NST"
           APP_PATH="dist/K-Mends Wellbeing.app"
           
-          # 1. FIND AND SIGN EVERY PYTHON FILE IN THE ENTIRE APP BUNDLE
-          # This fixes sidebar.py and animations.py regardless of whether they are in Resources or Frameworks
-          find "$APP_PATH" -type f -name "*.py" -print0 | xargs -0 codesign --force --verify --verbose --options runtime --sign "$IDENTITY"
-
-          # 2. Sign all binary libraries (.dylib and .so)
-          find "$APP_PATH/Contents/Frameworks" -type f \( -name "*.dylib" -or -name "*.so" \) -print0 | xargs -0 codesign --force --verify --verbose --options runtime --sign "$IDENTITY"
-
-          # 3. Sign internal .app bundles
-          find "$APP_PATH/Contents/Frameworks" -name "*.app" -print0 | xargs -0 codesign --force --verify --verbose --options runtime --sign "$IDENTITY"
-
-          # 4. Sign the main executable
+          # Sign everything inside the app from the bottom up
+          find "$APP_PATH/Contents/Frameworks/ui" -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} + || true
+          find "$APP_PATH/Contents/Frameworks/core" -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} + || true
+          find "$APP_PATH/Contents/Resources" -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} + || true
+          find "$APP_PATH/Contents/Frameworks" -name "*.dylib" -or -name "*.so" -or -name "*.app" -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} +
+          
           codesign --force --verify --verbose --options runtime --entitlements entitlements.plist --sign "$IDENTITY" "$APP_PATH/Contents/MacOS/K-Mends Wellbeing"
-
-          # 5. Final Bundle Seal
           codesign --force --verify --verbose --deep --options runtime --entitlements entitlements.plist --sign "$IDENTITY" "$APP_PATH"
 
       - name: Upload to App Store Connect
