@@ -263,7 +263,7 @@ jobs:
 
       - name: Build App via Clean Architecture Spec
         run: |
-          # Create a custom, strict entry point specification file
+          # 1. Create a custom, strict entry point specification file
           cat << 'EOF' > app.spec
           # -*- mode: python ; coding: utf-8 -*-
           import sys
@@ -330,17 +330,17 @@ jobs:
           )
           EOF
 
-          # Compile the application cleanly matching our custom spec file
-          pyinstaller --noconfirm app.spec
+          # 2. Compile the application cleanly and force output directly into /dist
+          pyinstaller --noconfirm --distpath dist app.spec
           
           APP_PATH="dist/K-Mends Wellbeing.app"
           
-          # Flatten symlinks to guarantee paths hold real files
+          # 3. Flatten symlinks to guarantee paths hold real files
           mv "$APP_PATH" "dist/K-Mends-Temp.app"
           cp -RL "dist/K-Mends-Temp.app/" "$APP_PATH"
           rm -rf "dist/K-Mends-Temp.app"
 
-          # CRUCIAL SANITIZATION PHASE: Force all loose Python components entirely out of Frameworks!
+          # 4. CRUCIAL SANITIZATION PHASE: Force all loose Python components entirely out of Frameworks!
           echo "Purging loose scripts from framework paths..."
           mkdir -p "$APP_PATH/Contents/Resources"
           for item in core ui assets; do
@@ -353,7 +353,7 @@ jobs:
           # Completely clean out any leftover dangling script artifacts from the binary directory
           find "$APP_PATH/Contents/Frameworks" -type f -name "*.py" -delete
 
-          # Update Info.plist properties
+          # 5. Update Info.plist properties
           /usr/libexec/PlistBuddy -c "Delete :CFBundleVersion" "$APP_PATH/Contents/Info.plist" || true
           /usr/libexec/PlistBuddy -c "Delete :CFBundleShortVersionString" "$APP_PATH/Contents/Info.plist" || true
           /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${{ github.run_number }}" "$APP_PATH/Contents/Info.plist"
@@ -386,7 +386,6 @@ jobs:
           xattr -cr "$APP_PATH"
 
           echo "2. Signing true nested compiled binary components (.dylib, .so)..."
-          # This sweeps Frameworks and MacOS folders exclusively for real compiled architecture objects
           find "$APP_PATH/Contents/Frameworks" -type f \( -name "*.dylib" -o -name "*.so" \) -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
           find "$APP_PATH/Contents/MacOS" -type f \( -name "*.dylib" -o -name "*.so" \) -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
 
