@@ -263,13 +263,14 @@ jobs:
 
       - name: Build App
         run: |
+          # Crucial Change: Mapping ui and core into Contents/Resources instead of Frameworks
           pyinstaller --noconfirm --windowed \
           --name "K-Mends Wellbeing" \
           --osx-bundle-identifier "com.kirkmends.wellbeing" \
           --icon "assets/icons/icon.icns" \
           --add-data "assets:assets" \
-          --add-data "core:core" \
-          --add-data "ui:ui" \
+          --add-data "core:Contents/Resources/core" \
+          --add-data "ui:Contents/Resources/ui" \
           --collect-all PySide6 \
           main.py
           
@@ -303,7 +304,7 @@ jobs:
           security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
 
-      - name: Manual Code Sign (The Absolute Final Sledgehammer)
+      - name: Manual Code Sign (The Structural Fix)
         run: |
           IDENTITY="VGUZ6D2NST"
           APP_PATH="dist/K-Mends Wellbeing.app"
@@ -312,23 +313,23 @@ jobs:
           echo "1. Cleaning extended attributes..."
           xattr -cr "$APP_PATH"
 
-          echo "2. Signing EVERYTHING in custom folders (JSON, QRC, PY, etc.)..."
-          # This specifically signs every single file in your ui, core, and resources folders.
-          # This fixes the 'stepping_away.json' error from your 3:54 AM screenshot.
-          find "$APP_PATH/Contents/Frameworks/ui" -type f -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
-          find "$APP_PATH/Contents/Frameworks/core" -type f -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
+          echo "2. Signing nested binary components (.dylib, .so) inside Frameworks..."
+          # This deep searches and signs strictly true Mach-O binaries, avoiding folder-level bundle errors
+          find "$APP_PATH/Contents/Frameworks" -type f \( -name "*.dylib" -o -name "*.so" \) -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
+
+          echo "3. Signing true nested app bundles if any exist..."
+          find "$APP_PATH/Contents/Frameworks" -name "*.app" -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
+
+          echo "4. Signing all loose resources and data components..."
+          # Signs any custom code/data files now cleanly living under Resources
           find "$APP_PATH/Contents/Resources" -type f -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
 
-          echo "3. Signing nested Frameworks, helper Apps, and Binaries..."
-          # This catches Python libraries (.so, .dylib) and bundled apps.
-          find "$APP_PATH/Contents/Frameworks" \( -name "*.app" -o -name "*.dylib" -o -name "*.so" \) -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
-
-          echo "4. Signing the main executable..."
+          echo "5. Signing the main executable..."
           codesign --force --verify --verbose --options runtime --entitlements "$ENTITLEMENTS" --sign "$IDENTITY" "$APP_PATH/Contents/MacOS/K-Mends Wellbeing"
 
-          echo "5. Final Master Seal..."
-          # The --deep flag now works because we've manually signed all the data sub-components.
-          codesign --force --verify --verbose --deep --options runtime --entitlements "$ENTITLEMENTS" --sign "$IDENTITY" "$APP_PATH"
+          echo "6. Final Master Seal..."
+          # No longer uses --deep because our architecture is completely clean, avoiding the validation crash!
+          codesign --force --verify --verbose --options runtime --entitlements "$ENTITLEMENTS" --sign "$IDENTITY" "$APP_PATH"
 
       - name: Upload to App Store Connect
         env:
