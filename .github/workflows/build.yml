@@ -261,27 +261,99 @@ jobs:
           pip install --upgrade pip
           pip install PySide6 pyinstaller psutil numpy pyqtgraph
 
-      - name: Build App
+      - name: Build App via Clean Architecture Spec
         run: |
-          # 1. Build natively letting PyInstaller assemble the dependencies
-          pyinstaller --noconfirm --windowed \
-          --name "K-Mends Wellbeing" \
-          --osx-bundle-identifier "com.kirkmends.wellbeing" \
-          --icon "assets/icons/icon.icns" \
-          --add-data "assets:assets" \
-          --add-data "core:core" \
-          --add-data "ui:ui" \
-          --collect-all PySide6 \
-          main.py
+          # Create a custom, strict entry point specification file
+          cat << 'EOF' > app.spec
+          # -*- mode: python ; coding: utf-8 -*-
+          import sys
+          import os
+          from PyInstaller.utils.hooks import collect_all
+
+          block_cipher = None
+
+          # Dynamically collect all required PySide6 binary/data components
+          datas, binaries, hiddenimports = collect_all('PySide6')
+
+          # Append your custom explicit data paths safely as pure resources
+          datas += [
+              ('assets', 'assets'),
+              ('core', 'core'),
+              ('ui', 'ui')
+          ]
+
+          a = Analysis(
+              ['main.py'],
+              pathex=[],
+              binaries=binaries,
+              datas=datas,
+              hiddenimports=hiddenimports,
+              hookspath=[],
+              hooksconfig={},
+              runtime_hooks=[],
+              excludes=[],
+              win_no_prefer_redirects=False,
+              win_private_assemblies=False,
+              cipher=block_cipher,
+              noarchive=False,
+          )
+
+          pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+
+          exe = EXE(
+              pyz,
+              a.scripts,
+              [],
+              exclude_binaries=True,
+              name='K-Mends Wellbeing',
+              debug=False,
+              bootloader_ignore_signals=False,
+              strip=False,
+              upx=True,
+              console=False,
+              disable_windowed_traceback=False,
+              argv_emulation=False,
+              target_arch=None,
+              codesign_identity=None,
+              entitlements_file=None,
+          )
+
+          coll = COLLECT(
+              exe,
+              a.binaries,
+              a.zipfiles,
+              a.datas,
+              strip=False,
+              upx=True,
+              upx_exclude=[],
+              name='K-Mends Wellbeing',
+          )
+          EOF
+
+          # Compile the application cleanly matching our custom spec file
+          pyinstaller --noconfirm app.spec
           
           APP_PATH="dist/K-Mends Wellbeing.app"
           
-          # 2. Flatten symlinks to guarantee paths hold real files
+          # Flatten symlinks to guarantee paths hold real files
           mv "$APP_PATH" "dist/K-Mends-Temp.app"
           cp -RL "dist/K-Mends-Temp.app/" "$APP_PATH"
           rm -rf "dist/K-Mends-Temp.app"
 
-          # 3. Update Info.plist properties
+          # CRUCIAL SANITIZATION PHASE: Force all loose Python components entirely out of Frameworks!
+          echo "Purging loose scripts from framework paths..."
+          mkdir -p "$APP_PATH/Contents/Resources"
+          for item in core ui assets; do
+            if [ -d "$APP_PATH/Contents/Frameworks/$item" ]; then
+              rm -rf "$APP_PATH/Contents/Resources/$item"
+              mv "$APP_PATH/Contents/Frameworks/$item" "$APP_PATH/Contents/Resources/"
+            fi
+          done
+
+          # Completely clean out any leftover dangling script artifacts from the binary directory
+          find "$APP_PATH/Contents/Frameworks" -type f -name "*.py" -delete
+
+          # Update Info.plist properties
           /usr/libexec/PlistBuddy -c "Delete :CFBundleVersion" "$APP_PATH/Contents/Info.plist" || true
           /usr/libexec/PlistBuddy -c "Delete :CFBundleShortVersionString" "$APP_PATH/Contents/Info.plist" || true
           /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${{ github.run_number }}" "$APP_PATH/Contents/Info.plist"
@@ -304,7 +376,7 @@ jobs:
           security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
 
-      - name: Manual Code Sign (The Structural Fix)
+      - name: Manual Code Sign (The Final Master Seal)
         run: |
           IDENTITY="VGUZ6D2NST"
           APP_PATH="dist/K-Mends Wellbeing.app"
@@ -313,19 +385,21 @@ jobs:
           echo "1. Scrubbing extended attributes..."
           xattr -cr "$APP_PATH"
 
-          echo "2. Explicitly signing only true compiled binary formats (.dylib, .so)..."
-          # This selectively isolates actual Mach-O binaries, bypassing bundle format flags on raw directories
+          echo "2. Signing true nested compiled binary components (.dylib, .so)..."
+          # This sweeps Frameworks and MacOS folders exclusively for real compiled architecture objects
           find "$APP_PATH/Contents/Frameworks" -type f \( -name "*.dylib" -o -name "*.so" \) -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
           find "$APP_PATH/Contents/MacOS" -type f \( -name "*.dylib" -o -name "*.so" \) -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
 
           echo "3. Signing standard nested internal application structures..."
           find "$APP_PATH/Contents/Frameworks" -name "*.app" -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
 
-          echo "4. Sealing the main entry executable binary..."
+          echo "4. Signing all relocated custom assets and resources..."
+          find "$APP_PATH/Contents/Resources" -type f -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
+
+          echo "5. Sealing the main entry executable binary..."
           codesign --force --verify --verbose --options runtime --entitlements "$ENTITLEMENTS" --sign "$IDENTITY" "$APP_PATH/Contents/MacOS/K-Mends Wellbeing"
 
-          echo "5. Forcing the definitive outer App Bundle Seal..."
-          # Adding the force option ensures that loose internal components inside python3.11 don't stop the overall application certificate verification
+          echo "6. Forcing the definitive outer App Bundle Seal..."
           codesign --force --verify --verbose --options runtime --entitlements "$ENTITLEMENTS" --sign "$IDENTITY" "$APP_PATH"
 
       - name: Upload to App Store Connect
