@@ -263,29 +263,30 @@ jobs:
 
       - name: Build App
         run: |
-          # 1. Build natively using command line options, forcing layout control
+          # --contents-directory forces PyInstaller's core to bundle quietly inside 'Frameworks',
+          # keeping the root Contents/Resources perfectly pristine for your custom assets.
           pyinstaller --noconfirm --windowed \
           --name "K-Mends Wellbeing" \
           --osx-bundle-identifier "com.kirkmends.wellbeing" \
           --icon "assets/icons/icon.icns" \
-          --add-data "assets:Contents/Resources/assets" \
-          --add-data "core:Contents/Resources/core" \
-          --add-data "ui:Contents/Resources/ui" \
+          --contents-directory "Contents/Frameworks" \
+          --add-data "assets:assets" \
+          --add-data "core:core" \
+          --add-data "ui:ui" \
           --collect-all PySide6 \
           main.py
           
           APP_PATH="dist/K-Mends Wellbeing.app"
           
-          # 2. Flatten symlinks cleanly using a direct path reference
+          # Flatten symlinks to guarantee all paths hold real files
           mv "$APP_PATH" "dist/K-Mends-Temp.app"
           cp -RL "dist/K-Mends-Temp.app/" "$APP_PATH"
           rm -rf "dist/K-Mends-Temp.app"
 
-          # 3. Purge loose raw scripts out of Frameworks if they leaked there
-          find "$APP_PATH/Contents/Frameworks" -type f -name "*.py" -delete || true
-          find "$APP_PATH/Contents/Frameworks" -type f -name "*.json" -delete || true
+          # Strict Cleanup: Wipe any stray text or config files that leaked into Frameworks
+          find "$APP_PATH/Contents/Frameworks" -type f \( -name "*.py" -o -name "*.qrc" -o -name "*.json" \) -delete || true
 
-          # 4. Update Info.plist metadata fields
+          # Update Info.plist properties
           /usr/libexec/PlistBuddy -c "Delete :CFBundleVersion" "$APP_PATH/Contents/Info.plist" || true
           /usr/libexec/PlistBuddy -c "Delete :CFBundleShortVersionString" "$APP_PATH/Contents/Info.plist" || true
           /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${{ github.run_number }}" "$APP_PATH/Contents/Info.plist"
@@ -314,23 +315,23 @@ jobs:
           APP_PATH="dist/K-Mends Wellbeing.app"
           ENTITLEMENTS="entitlements.plist"
 
-          echo "1. Scrubbing extended file attributes..."
+          echo "1. Scrubbing extended attributes..."
           xattr -cr "$APP_PATH"
 
-          echo "2. Signing true nested compiled binaries (.dylib, .so)..."
+          echo "2. Signing true nested compiled binary components (.dylib, .so)..."
           find "$APP_PATH/Contents/Frameworks" -type f \( -name "*.dylib" -o -name "*.so" \) -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
           find "$APP_PATH/Contents/MacOS" -type f \( -name "*.dylib" -o -name "*.so" \) -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
 
-          echo "3. Signing standard nested application system helpers..."
+          echo "3. Signing nested helper applications..."
           find "$APP_PATH/Contents/Frameworks" -name "*.app" -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
 
-          echo "4. Signing custom application assets and scripts..."
+          echo "4. Signing app assets and resources cleanly..."
           find "$APP_PATH/Contents/Resources" -type f -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
 
-          echo "5. Sealing the main binary container..."
+          echo "5. Sealing the main entry binary..."
           codesign --force --verify --verbose --options runtime --entitlements "$ENTITLEMENTS" --sign "$IDENTITY" "$APP_PATH/Contents/MacOS/K-Mends Wellbeing"
 
-          echo "6. Completing master bundle cryptographic seal..."
+          echo "6. Completing the outer App Bundle cryptographic seal..."
           codesign --force --verify --verbose --options runtime --entitlements "$ENTITLEMENTS" --sign "$IDENTITY" "$APP_PATH"
 
       - name: Upload to App Store Connect

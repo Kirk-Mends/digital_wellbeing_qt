@@ -356,18 +356,22 @@ import multiprocessing
 import traceback
 
 # --- 1. RESOURCE PATH HELPER ---
-# This ensures the app can find its assets whether running from source or as a .app bundle
+# This looks up custom modules inside the root bundle directory
 def resource_path(relative_path):
     try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = sys._MEIPASS
     except Exception:
         base_path = os.path.dirname(os.path.abspath(__file__))
         
-    # Check if we are running inside our new official Mac App Store layout
-    prod_path = os.path.join(base_path, "Contents", "Resources", relative_path)
+    # Check for paths inside the verified Mac App Store layout
+    prod_path = os.path.join(base_path, relative_path)
     if os.path.exists(prod_path):
         return prod_path
+
+    # Fallback checking up one level if called inside nested sub-framework hooks
+    fallback_path = os.path.join(base_path, "..", "Resources", relative_path)
+    if os.path.exists(fallback_path):
+        return fallback_path
 
     return os.path.join(base_path, relative_path)
 
@@ -404,7 +408,6 @@ def check_mac_permissions():
             msg.exec()
 
 def main():
-    # Required for PyInstaller + Multiprocessing
     multiprocessing.freeze_support()
     
     if platform.system() == "Darwin":
@@ -415,11 +418,9 @@ def main():
     if platform.system() == "Darwin":
         check_mac_permissions()
     
-    # Crucial: Keeps the app running in the tray even if the main window is closed
     app.setQuitOnLastWindowClosed(False)
 
     # --- 4. SINGLE INSTANCE CHECK ---
-    # Prevents multiple copies of the app from running at once
     server_name = "com.kirkmends.wellbeing.localserver"
     socket = QLocalSocket()
     socket.connectToServer(server_name)
@@ -434,13 +435,9 @@ def main():
 
     # --- 5. MAIN EXECUTION ---
     try:
-        # MainWindow handles its own tray setup in ui/main_window.py
         window = MainWindow()
-        
-        # Initial UI Setup
         window.show_ai()
         
-        # Small delay before starting monitoring to ensure UI is ready
         QTimer.singleShot(150, lambda: (
             window.toggle_monitoring(), 
             window.ai_mode_page.sync_button_state()
