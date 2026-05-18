@@ -356,7 +356,6 @@ import multiprocessing
 import traceback
 
 # --- 1. RESOURCE PATH HELPER ---
-# This looks up custom modules inside the root bundle directory
 def resource_path(relative_path):
     try:
         base_path = sys._MEIPASS
