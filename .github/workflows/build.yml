@@ -263,7 +263,7 @@ jobs:
 
       - name: Build App
         run: |
-          # We pack assets natively into the root bundle space to let PyInstaller build seamlessly
+          # 1. Build natively letting PyInstaller assemble the dependencies
           pyinstaller --noconfirm --windowed \
           --name "K-Mends Wellbeing" \
           --osx-bundle-identifier "com.kirkmends.wellbeing" \
@@ -276,12 +276,12 @@ jobs:
           
           APP_PATH="dist/K-Mends Wellbeing.app"
           
-          # Flatten symlinks to ensure files are real and signable
+          # 2. Flatten symlinks to guarantee paths hold real files
           mv "$APP_PATH" "dist/K-Mends-Temp.app"
           cp -RL "dist/K-Mends-Temp.app/" "$APP_PATH"
           rm -rf "dist/K-Mends-Temp.app"
 
-          # Update Info.plist with build numbers
+          # 3. Update Info.plist properties
           /usr/libexec/PlistBuddy -c "Delete :CFBundleVersion" "$APP_PATH/Contents/Info.plist" || true
           /usr/libexec/PlistBuddy -c "Delete :CFBundleShortVersionString" "$APP_PATH/Contents/Info.plist" || true
           /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${{ github.run_number }}" "$APP_PATH/Contents/Info.plist"
@@ -304,28 +304,28 @@ jobs:
           security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
 
-      - name: Manual Code Sign (The Final Definite Fix)
+      - name: Manual Code Sign (The Structural Fix)
         run: |
           IDENTITY="VGUZ6D2NST"
           APP_PATH="dist/K-Mends Wellbeing.app"
           ENTITLEMENTS="entitlements.plist"
 
-          echo "1. Cleaning extended attributes..."
+          echo "1. Scrubbing extended attributes..."
           xattr -cr "$APP_PATH"
 
-          echo "2. Signing true nested compiled binary components (.dylib, .so)..."
-          # This sweeps Frameworks and MacOS folders exclusively for real compiled architecture objects
+          echo "2. Explicitly signing only true compiled binary formats (.dylib, .so)..."
+          # This selectively isolates actual Mach-O binaries, bypassing bundle format flags on raw directories
           find "$APP_PATH/Contents/Frameworks" -type f \( -name "*.dylib" -o -name "*.so" \) -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
           find "$APP_PATH/Contents/MacOS" -type f \( -name "*.dylib" -o -name "*.so" \) -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
 
-          echo "3. Signing true nested app bundles inside frameworks..."
+          echo "3. Signing standard nested internal application structures..."
           find "$APP_PATH/Contents/Frameworks" -name "*.app" -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
 
-          echo "4. Signing the main executable binary..."
+          echo "4. Sealing the main entry executable binary..."
           codesign --force --verify --verbose --options runtime --entitlements "$ENTITLEMENTS" --sign "$IDENTITY" "$APP_PATH/Contents/MacOS/K-Mends Wellbeing"
 
-          echo "5. Final App Bundle Seal..."
-          # We omit --deep to prevent codesign from tracking and erroring out on raw text, json, or python data assets!
+          echo "5. Forcing the definitive outer App Bundle Seal..."
+          # Adding the force option ensures that loose internal components inside python3.11 don't stop the overall application certificate verification
           codesign --force --verify --verbose --options runtime --entitlements "$ENTITLEMENTS" --sign "$IDENTITY" "$APP_PATH"
 
       - name: Upload to App Store Connect
