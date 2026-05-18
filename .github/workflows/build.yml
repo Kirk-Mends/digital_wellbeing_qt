@@ -263,13 +263,11 @@ jobs:
 
       - name: Build App
         run: |
-          # The --framework-name argument resolves the python3.11 bundle validation error
-          # by containing the loose embedded execution files inside a structured bundle.
+          # 1. Build standard application layout cleanly without unsupported flags
           pyinstaller --noconfirm --windowed \
           --name "K-Mends Wellbeing" \
           --osx-bundle-identifier "com.kirkmends.wellbeing" \
           --icon "assets/icons/icon.icns" \
-          --framework-name="PythonInternal" \
           --add-data "assets:assets" \
           --add-data "core:core" \
           --add-data "ui:ui" \
@@ -278,14 +276,16 @@ jobs:
           
           APP_PATH="dist/K-Mends Wellbeing.app"
           
-          # Flatten symlinks to guarantee all paths hold real files
+          # 2. Flatten symlinks to guarantee all paths hold real files
           mv "$APP_PATH" "dist/K-Mends-Temp.app"
           cp -RL "dist/K-Mends-Temp.app/" "$APP_PATH"
           rm -rf "dist/K-Mends-Temp.app"
 
-          # Relocate custom asset folders to the safe root directory
-          echo "Moving loose data folders out of Frameworks space..."
+          # 3. ADVANCED SANITIZATION PHASE: Clear loose assets entirely out of Frameworks
+          echo "Relocating loose app data and runtime folders into Resources..."
           mkdir -p "$APP_PATH/Contents/Resources"
+          
+          # Move your custom source code modules
           for target in assets core ui; do
             if [ -d "$APP_PATH/Contents/Frameworks/$target" ]; then
               rm -rf "$APP_PATH/Contents/Resources/$target"
@@ -293,10 +293,17 @@ jobs:
             fi
           done
 
-          # Strip out loose text files or scripts that can cause code signing errors
+          # CRUCIAL: Relocate the python3.11 environment folder to pass validation
+          if [ -d "$APP_PATH/Contents/Frameworks/python3.11" ]; then
+            echo "Moving python3.11 environment folder safely to Resources..."
+            rm -rf "$APP_PATH/Contents/Resources/python3.11"
+            mv "$APP_PATH/Contents/Frameworks/python3.11" "$APP_PATH/Contents/Resources/"
+          fi
+
+          # Clean out residual text scripts, source files or layout files leaking in Frameworks root
           find "$APP_PATH/Contents/Frameworks" -maxdepth 1 -type f \( -name "*.py" -o -name "*.qrc" -o -name "*.json" -o -name "*.txt" \) -delete || true
 
-          # Update Info.plist properties
+          # 4. Update Info.plist properties
           /usr/libexec/PlistBuddy -c "Delete :CFBundleVersion" "$APP_PATH/Contents/Info.plist" || true
           /usr/libexec/PlistBuddy -c "Delete :CFBundleShortVersionString" "$APP_PATH/Contents/Info.plist" || true
           /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${{ github.run_number }}" "$APP_PATH/Contents/Info.plist"
@@ -328,25 +335,20 @@ jobs:
           echo "1. Scrubbing extended file attributes..."
           xattr -cr "$APP_PATH"
 
-          echo "2. Signing the new embedded runtime Python framework structure..."
-          if [ -d "$APP_PATH/Contents/Frameworks/PythonInternal.framework" ]; then
-            codesign --force --verify --verbose --options runtime --sign "$IDENTITY" "$APP_PATH/Contents/Frameworks/PythonInternal.framework" || true
-          fi
-
-          echo "3. Signing true nested compiled binary libraries (.dylib, .so)..."
+          echo "2. Signing true nested compiled binary libraries (.dylib, .so)..."
           find "$APP_PATH/Contents/Frameworks" -type f \( -name "*.dylib" -o -name "*.so" \) -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
           find "$APP_PATH/Contents/MacOS" -type f \( -name "*.dylib" -o -name "*.so" \) -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
 
-          echo "4. Signing nested helper applications..."
+          echo "3. Signing standard nested internal helper app architectures..."
           find "$APP_PATH/Contents/Frameworks" -name "*.app" -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
 
-          echo "5. Signing custom app assets and scripts..."
+          echo "4. Signing all relocated python packages, custom assets, and scripts cleanly..."
           find "$APP_PATH/Contents/Resources" -type f -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
 
-          echo "6. Sealing the main entry executable binary..."
+          echo "5. Sealing the main entry executable binary..."
           codesign --force --verify --verbose --options runtime --entitlements "$ENTITLEMENTS" --sign "$IDENTITY" "$APP_PATH/Contents/MacOS/K-Mends Wellbeing"
 
-          echo "7. Forcing the definitive outer App Bundle Seal..."
+          echo "6. Forcing the definitive outer App Bundle Seal..."
           codesign --force --verify --verbose --options runtime --entitlements "$ENTITLEMENTS" --sign "$IDENTITY" "$APP_PATH"
 
       - name: Upload to App Store Connect

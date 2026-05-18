@@ -357,22 +357,27 @@ import platform
 import multiprocessing
 import traceback
 
-# --- 1. RESOURCE PATH HELPER ---
+# --- 1. INTUITIVE RESOURCE PATH HELPER ---
 def resource_path(relative_path):
     try:
         base_path = sys._MEIPASS
     except Exception:
         base_path = os.path.dirname(os.path.abspath(__file__))
         
-    # Check for paths inside the verified Mac App Store layout
+    # Check directly inside the package root level
     prod_path = os.path.join(base_path, relative_path)
     if os.path.exists(prod_path):
         return prod_path
 
-    # Fallback checking up one level if called inside nested sub-framework hooks
+    # Check inside the sanitized Resources directory layout
     fallback_path = os.path.join(base_path, "..", "Resources", relative_path)
     if os.path.exists(fallback_path):
         return fallback_path
+
+    # Check inside the shifted python environment subfolder
+    python_env_path = os.path.join(base_path, "..", "Resources", "python3.11", relative_path)
+    if os.path.exists(python_env_path):
+        return python_env_path
 
     return os.path.join(base_path, relative_path)
 
