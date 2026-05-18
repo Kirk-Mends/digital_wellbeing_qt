@@ -281,14 +281,18 @@ jobs:
           cp -RL "dist/K-Mends-Temp.app/" "$APP_PATH"
           rm -rf "dist/K-Mends-Temp.app"
 
-          # 3. MANUALLY RESCUE CUSTOM MODULES OUT OF FRAMEWORKS
-          # Forces 'core' and 'ui' into the clean top-level Resources directory where Apple expects data/scripts.
+          # 3. MANUALLY RESCUE CUSTOM MODULES OUT OF FRAMEWORKS Safely
+          # We clear out potential duplicate targets first to prevent the 'Directory not empty' error!
           echo "Moving custom modules out of Frameworks to Resources..."
           mkdir -p "$APP_PATH/Contents/Resources"
+          
           if [ -d "$APP_PATH/Contents/Frameworks/core" ]; then
+            rm -rf "$APP_PATH/Contents/Resources/core"
             mv "$APP_PATH/Contents/Frameworks/core" "$APP_PATH/Contents/Resources/"
           fi
+          
           if [ -d "$APP_PATH/Contents/Frameworks/ui" ]; then
+            rm -rf "$APP_PATH/Contents/Resources/ui"
             mv "$APP_PATH/Contents/Frameworks/ui" "$APP_PATH/Contents/Resources/"
           fi
 
