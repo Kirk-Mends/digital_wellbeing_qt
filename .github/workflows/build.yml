@@ -263,7 +263,7 @@ jobs:
 
       - name: Build App
         run: |
-          # 1. Build natively first, letting PyInstaller lay out the dependencies naturally
+          # We pack assets natively into the root bundle space to let PyInstaller build seamlessly
           pyinstaller --noconfirm --windowed \
           --name "K-Mends Wellbeing" \
           --osx-bundle-identifier "com.kirkmends.wellbeing" \
@@ -276,27 +276,12 @@ jobs:
           
           APP_PATH="dist/K-Mends Wellbeing.app"
           
-          # 2. Flatten symlinks to ensure files are real and signable
+          # Flatten symlinks to ensure files are real and signable
           mv "$APP_PATH" "dist/K-Mends-Temp.app"
           cp -RL "dist/K-Mends-Temp.app/" "$APP_PATH"
           rm -rf "dist/K-Mends-Temp.app"
 
-          # 3. MANUALLY RESCUE CUSTOM MODULES OUT OF FRAMEWORKS Safely
-          # We clear out potential duplicate targets first to prevent the 'Directory not empty' error!
-          echo "Moving custom modules out of Frameworks to Resources..."
-          mkdir -p "$APP_PATH/Contents/Resources"
-          
-          if [ -d "$APP_PATH/Contents/Frameworks/core" ]; then
-            rm -rf "$APP_PATH/Contents/Resources/core"
-            mv "$APP_PATH/Contents/Frameworks/core" "$APP_PATH/Contents/Resources/"
-          fi
-          
-          if [ -d "$APP_PATH/Contents/Frameworks/ui" ]; then
-            rm -rf "$APP_PATH/Contents/Resources/ui"
-            mv "$APP_PATH/Contents/Frameworks/ui" "$APP_PATH/Contents/Resources/"
-          fi
-
-          # 4. Update Info.plist with build numbers
+          # Update Info.plist with build numbers
           /usr/libexec/PlistBuddy -c "Delete :CFBundleVersion" "$APP_PATH/Contents/Info.plist" || true
           /usr/libexec/PlistBuddy -c "Delete :CFBundleShortVersionString" "$APP_PATH/Contents/Info.plist" || true
           /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${{ github.run_number }}" "$APP_PATH/Contents/Info.plist"
@@ -319,7 +304,7 @@ jobs:
           security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
 
-      - name: Manual Code Sign (The True Structural Fix)
+      - name: Manual Code Sign (The Final Definite Fix)
         run: |
           IDENTITY="VGUZ6D2NST"
           APP_PATH="dist/K-Mends Wellbeing.app"
@@ -328,25 +313,19 @@ jobs:
           echo "1. Cleaning extended attributes..."
           xattr -cr "$APP_PATH"
 
-          echo "2. Signing nested binary components (.dylib, .so) inside Frameworks..."
-          # This strictly signs true compiled Mach-O binaries, ignoring raw code folders
+          echo "2. Signing true nested compiled binary components (.dylib, .so)..."
+          # This sweeps Frameworks and MacOS folders exclusively for real compiled architecture objects
           find "$APP_PATH/Contents/Frameworks" -type f \( -name "*.dylib" -o -name "*.so" \) -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
+          find "$APP_PATH/Contents/MacOS" -type f \( -name "*.dylib" -o -name "*.so" \) -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
 
-          echo "3. Signing true nested app bundles if any exist..."
+          echo "3. Signing true nested app bundles inside frameworks..."
           find "$APP_PATH/Contents/Frameworks" -name "*.app" -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
 
-          echo "4. Signing all safe resources and custom assets..."
-          # This cleanly signs the python files and assets we relocated to Resources
-          find "$APP_PATH/Contents/Resources" -type f -depth -exec codesign --force --verify --verbose --options runtime --sign "$IDENTITY" {} \; || true
-
-          # Extra guard: Clean attributes on the executable specifically before signing
-          xattr -cr "$APP_PATH/Contents/MacOS/K-Mends Wellbeing"
-
-          echo "5. Signing the main executable..."
+          echo "4. Signing the main executable binary..."
           codesign --force --verify --verbose --options runtime --entitlements "$ENTITLEMENTS" --sign "$IDENTITY" "$APP_PATH/Contents/MacOS/K-Mends Wellbeing"
 
-          echo "6. Final Master Seal..."
-          # We don't use --deep here to protect our clean bundle mapping
+          echo "5. Final App Bundle Seal..."
+          # We omit --deep to prevent codesign from tracking and erroring out on raw text, json, or python data assets!
           codesign --force --verify --verbose --options runtime --entitlements "$ENTITLEMENTS" --sign "$IDENTITY" "$APP_PATH"
 
       - name: Upload to App Store Connect

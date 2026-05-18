@@ -364,11 +364,6 @@ def resource_path(relative_path):
     except Exception:
         base_path = os.path.dirname(os.path.abspath(__file__))
         
-    # Check if we are running inside our new official Mac App Store layout
-    prod_path = os.path.join(base_path, "Contents", "Resources", relative_path)
-    if os.path.exists(prod_path):
-        return prod_path
-
     return os.path.join(base_path, relative_path)
 
 # --- 2. EMERGENCY PYNPUT/ACCESSIBILITY PATCH ---
